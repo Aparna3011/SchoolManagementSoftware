@@ -10,10 +10,10 @@ import { Outlet } from 'react-router-dom';
 
 export function Layout() {
   return (
-    <div className="app-layout">
+    <div className="flex w-full h-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="app-main">
-        <div className="page-container animate-fade-in">
+      <main className="flex-1 h-screen overflow-y-auto bg-slate-50 relative">
+        <div className="p-8 max-w-[1400px] mx-auto min-h-full">
           <Outlet />
         </div>
       </main>

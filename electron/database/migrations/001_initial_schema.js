@@ -1,6 +1,6 @@
 /**
  * Migration 001: Initial Schema
- * 
+ *
  * Creates all base tables for the School Management System:
  * - Company_Profile (singleton)
  * - Financial_Years
@@ -10,7 +10,7 @@
  */
 
 const version = 1;
-const name = 'initial_schema';
+const name = "initial_schema";
 
 /**
  * @param {import('better-sqlite3').Database} db
@@ -35,7 +35,7 @@ function up(db) {
   // Seed default company profile row
   db.exec(`
     INSERT OR IGNORE INTO Company_Profile (id, firm_name)
-    VALUES (1, 'Rainbow Play School');
+    VALUES (1, 'School Management System');
   `);
 
   db.exec(`
@@ -114,10 +114,18 @@ function up(db) {
   // ============ INDEXES ============
 
   db.exec(`CREATE INDEX IF NOT EXISTS idx_students_sr_no ON Students(sr_no);`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_name ON Students(student_name);`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_class ON Students(class_id);`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_payments_student ON Payments(student_id);`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_payments_invoice ON Payments(invoice_no);`);
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_students_name ON Students(student_name);`,
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_students_class ON Students(class_id);`,
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_payments_student ON Payments(student_id);`,
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_payments_invoice ON Payments(invoice_no);`,
+  );
 }
 
 module.exports = { version, name, up };

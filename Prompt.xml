@@ -1,6 +1,6 @@
 <ProjectRequest>
     <AppDetails>
-        <Name>School Management System (Rainbow Play School)</Name>
+        <Name>School Management System </Name>
         <Stack>React, Electron, SQLite</Stack>
         <Platform>Windows Desktop</Platform>
         <Architecture>Local-First / Offline</Architecture>

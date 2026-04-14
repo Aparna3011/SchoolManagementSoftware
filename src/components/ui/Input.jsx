@@ -4,6 +4,9 @@
  * Text input with label, error, and hint support.
  */
 
+const baseInputStyles = "w-full px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 rounded-md outline-none transition-all focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-500";
+const errorInputStyles = "border-red-500 focus:border-red-500 focus:ring-red-100";
+
 export function Input({
   label,
   name,
@@ -19,11 +22,11 @@ export function Input({
   ...props
 }) {
   return (
-    <div className={`form-group ${className}`}>
+    <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label htmlFor={name} className="form-label">
+        <label htmlFor={name} className="text-sm font-medium text-slate-900">
           {label}
-          {required && <span className="required">*</span>}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <input
@@ -35,11 +38,11 @@ export function Input({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className={`form-input ${error ? 'error' : ''}`}
+        className={`${baseInputStyles} ${error ? errorInputStyles : ''}`}
         {...props}
       />
-      {error && <span className="form-error">{error}</span>}
-      {hint && !error && <span className="form-hint">{hint}</span>}
+      {error && <span className="text-xs text-red-500">{error}</span>}
+      {hint && !error && <span className="text-xs text-slate-400">{hint}</span>}
     </div>
   );
 }
@@ -60,11 +63,11 @@ export function Textarea({
   ...props
 }) {
   return (
-    <div className={`form-group ${className}`}>
+    <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label htmlFor={name} className="form-label">
+        <label htmlFor={name} className="text-sm font-medium text-slate-900">
           {label}
-          {required && <span className="required">*</span>}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <textarea
@@ -75,10 +78,10 @@ export function Textarea({
         placeholder={placeholder}
         required={required}
         rows={rows}
-        className={`form-textarea ${error ? 'error' : ''}`}
+        className={`${baseInputStyles} resize-y min-h-[80px] ${error ? errorInputStyles : ''}`}
         {...props}
       />
-      {error && <span className="form-error">{error}</span>}
+      {error && <span className="text-xs text-red-500">{error}</span>}
     </div>
   );
 }

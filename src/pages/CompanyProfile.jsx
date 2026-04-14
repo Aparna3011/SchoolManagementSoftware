@@ -87,9 +87,9 @@ export default function CompanyProfile() {
   return (
     <div>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Company Profile</h1>
-        <p className="page-subtitle">Manage your school's identity and branding details</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 leading-tight">Company Profile</h1>
+        <p className="text-base text-slate-500 mt-1">Manage your school's identity and branding details</p>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -106,7 +106,7 @@ export default function CompanyProfile() {
                   name="firm_name"
                   value={form.firm_name}
                   onChange={handleChange}
-                  placeholder="e.g., Rainbow Play School"
+                  placeholder="e.g., School Management System"
                   required
                 />
                 <Textarea
@@ -117,7 +117,7 @@ export default function CompanyProfile() {
                   placeholder="Full address..."
                   rows={3}
                 />
-                <div className="form-row form-row-2">
+                <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Phone Number"
                     name="phone"
@@ -163,30 +163,30 @@ export default function CompanyProfile() {
             <CardTitle>School Logo</CardTitle>
           </CardHeader>
           <CardBody>
-            <div className="photo-upload">
-              <div className="photo-preview" style={{ width: '180px', height: '180px' }}>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-[180px] h-[180px] rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="School Logo" />
+                  <img src={logoPreview} alt="School Logo" className="w-full h-full object-contain" />
                 ) : (
-                  <div className="photo-preview-placeholder">
-                    <Building2 size={32} />
+                  <div className="flex flex-col items-center text-slate-400">
+                    <Building2 size={32} className="mb-2 opacity-50" />
                     <span className="text-xs">No logo uploaded</span>
                   </div>
                 )}
               </div>
-              <div className="photo-actions">
-                <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
-                  <Upload size={14} />
+              <div className="flex gap-2 justify-center w-full">
+                <label className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                  <Upload size={16} />
                   Upload Logo
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleLogoUpload}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
                 </label>
               </div>
-              <p className="text-xs text-muted text-center">
+              <p className="text-xs text-slate-500 text-center max-w-[200px]">
                 Upload a square image for best results (PNG or JPG)
               </p>
             </div>

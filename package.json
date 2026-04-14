@@ -4,6 +4,8 @@
   "description": "",
   "main": "electron/main.js",
   "scripts": {
+    "postinstall": "electron-rebuild",
+    "rebuild": "electron-rebuild",
     "dev:vite": "vite",
     "dev:electron": "electron .",
     "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && npm run dev:electron\"",
@@ -23,6 +25,8 @@
     "wait-on": "^9.0.5"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.4.1",
+    "@tailwindcss/vite": "^4.2.2",
     "better-sqlite3": "^12.9.0",
     "date-fns": "^4.1.0",
     "jspdf": "^4.2.1",
@@ -30,6 +34,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1",
-    "react-webcam": "^7.2.0"
+    "react-webcam": "^7.2.0",
+    "tailwindcss": "^4.2.2"
   }
 }

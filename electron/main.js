@@ -1,14 +1,16 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-const { getDatabase, closeDatabase } = require('./database/connection');
-const { runMigrations } = require('./database/migrations/runner');
+const { app, BrowserWindow, ipcMain } = require("electron");
+const path = require("path");
+const { getDatabase, closeDatabase } = require("./database/connection");
+const { runMigrations } = require("./database/migrations/runner");
 
 // Controllers
-const { registerCompanyHandlers } = require('./controllers/companyController');
-const { registerFinancialYearHandlers } = require('./controllers/financialYearController');
-const { registerClassHandlers } = require('./controllers/classController');
-const { registerStudentHandlers } = require('./controllers/studentController');
-const { registerPaymentHandlers } = require('./controllers/paymentController');
+const { registerCompanyHandlers } = require("./controllers/companyController");
+const {
+  registerFinancialYearHandlers,
+} = require("./controllers/financialYearController");
+const { registerClassHandlers } = require("./controllers/classController");
+const { registerStudentHandlers } = require("./controllers/studentController");
+const { registerPaymentHandlers } = require("./controllers/paymentController");
 
 let mainWindow = null;
 
@@ -18,7 +20,7 @@ let mainWindow = null;
 function initializeDatabase() {
   const db = getDatabase();
   runMigrations(db);
-  console.log('[Main] Database initialized.');
+  console.log("[Main] Database initialized.");
 }
 
 /**
@@ -30,9 +32,9 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 700,
-    title: 'Rainbow Play School - Management System',
+    title: "School Management System",
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -43,18 +45,18 @@ function createWindow() {
   const isDev = !app.isPackaged;
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
 
   // Show window when ready to prevent white flash
-  mainWindow.once('ready-to-show', () => {
+  mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
 
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
@@ -68,7 +70,7 @@ function registerAllHandlers() {
   registerClassHandlers();
   registerStudentHandlers();
   registerPaymentHandlers();
-  console.log('[Main] All IPC handlers registered.');
+  console.log("[Main] All IPC handlers registered.");
 }
 
 // ============ APP LIFECYCLE ============
@@ -79,12 +81,12 @@ app.whenReady().then(() => {
   createWindow();
 });
 
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   closeDatabase();
   app.quit();
 });
 
-app.on('activate', () => {
+app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }

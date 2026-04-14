@@ -1,4 +1,4 @@
-This is a comprehensive blueprint for your **Rainbow Play School ERP**. By moving to this XML-structured approach, we ensure that the logic is decoupled: your "Company" data drives the UI, and your "Master" data drives the "Transaction" logic.
+This is a comprehensive blueprint for your **School Management System**. By moving to this XML-structured approach, we ensure that the logic is decoupled: your "Company" data drives the UI, and your "Master" data drives the "Transaction" logic.
 
 Here is the functional breakdown of how every feature will work, followed by the technical deliverables.
 
@@ -9,7 +9,7 @@ Here is the functional breakdown of how every feature will work, followed by the
 ### **A. Company Profile & Dynamic Branding**
 
 - **How it works:** This is your "System Identity." You upload your school logo and enter details once.
-- **The Magic:** Instead of hardcoding "Rainbow Play School" into your forms, the software pulls the `FirmName` and `LogoPath` from the database. If you change your phone number here, it updates on the dashboard, the admission forms, and the ID cards automatically.
+- **The Magic:** Instead of hardcoding "School Management System" into your forms, the software pulls the `FirmName` and `LogoPath` from the database. If you change your phone number here, it updates on the dashboard, the admission forms, and the ID cards automatically.
 
 ### **B. Master Settings (The Control Room)**
 

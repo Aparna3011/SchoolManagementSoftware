@@ -6,8 +6,10 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Table } from '../components/ui/Table';
 import { Modal } from '../components/ui/Modal';
+import { FeesReceiptPDF } from '../components/pdf/FeesReceiptPDF';
 
 /**
  * Fees Page
@@ -26,6 +28,7 @@ export default function Fees() {
   // Selected student
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [ledger, setLedger] = useState(null);
+  const [companyProfile, setCompanyProfile] = useState(null);
 
   // Payment modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -52,6 +55,12 @@ export default function Fees() {
     setSearched(true);
     setSelectedStudent(null);
     setLedger(null);
+
+    // Load company profile for receipt PDFs if not already loaded
+    if (!companyProfile) {
+      const profile = await execute(() => window.api.company.get());
+      if (profile) setCompanyProfile(profile);
+    }
   }
 
   // ============ SELECT STUDENT ============
@@ -145,12 +154,22 @@ export default function Fees() {
     {
       key: 'actions',
       label: '',
-      width: '60px',
+      width: '120px',
       render: (_, row) =>
         row.status === 'Active' ? (
-          <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Invoice">
-            <XCircle size={14} />
-          </Button>
+          <div className="flex gap-2 justify-end">
+            <PDFDownloadLink
+              document={<FeesReceiptPDF payment={row} student={selectedStudent} company={companyProfile} />}
+              fileName={`receipt_${row.invoice_no?.replace(/\//g, '_')}.pdf`}
+              className="inline-flex items-center justify-center p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+              title="Print Receipt"
+            >
+              {({ loading }) => (loading ? <AlertCircle size={14} className="animate-spin" /> : <FileText size={14} />)}
+            </PDFDownloadLink>
+            <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Invoice">
+              <XCircle size={14} />
+            </Button>
+          </div>
         ) : null,
     },
   ];
@@ -165,9 +184,9 @@ export default function Fees() {
   return (
     <div>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Fees Management</h1>
-        <p className="page-subtitle">Search students, view ledgers, and record payments</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 leading-tight">Fees Management</h1>
+        <p className="text-base text-slate-500 mt-1">Search students, view ledgers, and record payments</p>
       </div>
 
       {/* Search Bar */}
@@ -201,29 +220,22 @@ export default function Fees() {
             </CardHeader>
             <CardBody style={{ padding: 0, maxHeight: '500px', overflowY: 'auto' }}>
               {!searched ? (
-                <div className="empty-state">
-                  <Search size={32} />
-                  <p className="empty-state-text">Search for a student to view their fee ledger</p>
+                <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+                  <Search size={32} className="mb-3 opacity-50" />
+                  <p className="text-sm font-medium">Search for a student to view their fee ledger</p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="empty-state">
-                  <AlertCircle size={32} />
-                  <p className="empty-state-title">No students found</p>
-                  <p className="empty-state-text">Try a different search term</p>
+                <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+                  <AlertCircle size={32} className="mb-3 opacity-50" />
+                  <p className="text-base font-semibold text-slate-700">No students found</p>
+                  <p className="text-sm">Try a different search term</p>
                 </div>
               ) : (
                 <div>
                   {students.map((s) => (
                     <div
                       key={s.id}
-                      className={`flex items-center gap-3`}
-                      style={{
-                        padding: 'var(--space-3) var(--space-4)',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--color-border-light)',
-                        background: selectedStudent?.id === s.id ? 'var(--color-primary-50)' : 'transparent',
-                        transition: 'background 150ms',
-                      }}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-slate-100 transition-colors ${selectedStudent?.id === s.id ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
                       onClick={() => selectStudent(s)}
                     >
                       <div style={{ flex: 1 }}>
@@ -247,10 +259,10 @@ export default function Fees() {
           {!selectedStudent ? (
             <Card>
               <CardBody>
-                <div className="empty-state">
-                  <FileText size={40} />
-                  <p className="empty-state-title">Select a Student</p>
-                  <p className="empty-state-text">
+                <div className="flex flex-col items-center justify-center p-16 text-slate-400">
+                  <FileText size={40} className="mb-4 opacity-50" />
+                  <p className="text-lg font-semibold text-slate-700 mb-1">Select a Student</p>
+                  <p className="text-sm text-center max-w-xs">
                     Search and select a student from the list to view their fee ledger
                   </p>
                 </div>
@@ -260,35 +272,35 @@ export default function Fees() {
             <div className="flex flex-col gap-6 animate-fade-in">
               {/* Ledger Summary */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="stat-card">
-                  <div className="stat-card-icon primary">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-50 text-indigo-600">
                     <IndianRupee size={24} />
                   </div>
-                  <div className="stat-card-content">
-                    <div className="stat-card-label">Total Fee</div>
-                    <div className="stat-card-value">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-500 mb-1">Total Fee</div>
+                    <div className="text-2xl font-bold text-slate-900 leading-none">
                       ₹{(ledger?.total_fee || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-card-icon success">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50 text-emerald-600">
                     <IndianRupee size={24} />
                   </div>
-                  <div className="stat-card-content">
-                    <div className="stat-card-label">Total Paid</div>
-                    <div className="stat-card-value">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-500 mb-1">Total Paid</div>
+                    <div className="text-2xl font-bold text-slate-900 leading-none">
                       ₹{(ledger?.total_paid || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-card-icon danger">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-50 text-red-600">
                     <AlertCircle size={24} />
                   </div>
-                  <div className="stat-card-content">
-                    <div className="stat-card-label">Balance</div>
-                    <div className="stat-card-value">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-500 mb-1">Balance</div>
+                    <div className="text-2xl font-bold text-slate-900 leading-none">
                       ₹{(ledger?.balance || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -334,24 +346,20 @@ export default function Fees() {
       >
         <div className="flex flex-col gap-4">
           {/* Invoice info */}
-          <div className="alert alert-warning">
-            <FileText size={18} />
+          <div className="flex p-4 mb-4 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg gap-3">
+            <FileText size={18} className="flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-medium">Invoice: {nextInvoiceNo}</div>
-              <div className="text-xs">Auto-generated. Cannot be changed.</div>
+              <div className="font-semibold mb-1">Invoice: {nextInvoiceNo}</div>
+              <div className="text-xs text-amber-700/80">Auto-generated. Cannot be changed.</div>
             </div>
           </div>
 
           {/* Student info */}
-          <div style={{
-            padding: 'var(--space-3) var(--space-4)',
-            background: 'var(--color-bg)',
-            borderRadius: 'var(--radius-md)',
-          }}>
+          <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-md">
             <div className="font-medium text-sm">
               {selectedStudent?.surname} {selectedStudent?.student_name}
             </div>
-            <div className="text-xs text-muted">
+            <div className="text-xs text-slate-500 mt-1">
               Balance: ₹{(ledger?.balance || 0).toLocaleString('en-IN')}
             </div>
           </div>

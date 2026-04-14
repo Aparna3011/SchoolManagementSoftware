@@ -109,9 +109,9 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div>
-        <div className="page-header">
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Welcome to Rainbow Play School Management System</p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Dashboard</h1>
+          <p className="text-base text-slate-500 mt-1">Welcome to School Management System</p>
         </div>
         <div className="grid grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
@@ -125,21 +125,21 @@ export default function Dashboard() {
   return (
     <div>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Welcome to Rainbow Play School Management System</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 leading-tight">Dashboard</h1>
+        <p className="text-base text-slate-500 mt-1">Welcome to School Management System</p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-4 gap-6 mb-6">
         {statCards.map((stat) => (
-          <div key={stat.label} className="stat-card">
-            <div className={`stat-card-icon ${stat.color}`}>
-              <stat.icon size={24} />
+          <div key={stat.label} className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 group">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${stat.color === 'primary' ? 'bg-indigo-50 text-indigo-600' : stat.color === 'success' ? 'bg-emerald-50 text-emerald-600' : stat.color === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+              <stat.icon size={24} className="group-hover:scale-110 transition-transform" />
             </div>
-            <div className="stat-card-content">
-              <div className="stat-card-label">{stat.label}</div>
-              <div className="stat-card-value">{stat.value}</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-slate-500 mb-1">{stat.label}</div>
+              <div className="text-2xl font-bold text-slate-900 leading-none">{stat.value}</div>
             </div>
           </div>
         ))}

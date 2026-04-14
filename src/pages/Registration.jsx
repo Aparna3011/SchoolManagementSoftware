@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, Camera, Upload, X, RotateCcw, UserPlus } from 'lucide-react';
 import Webcam from 'react-webcam';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
 import { Input, Textarea } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { RegistrationFormPDF } from '../components/pdf/RegistrationFormPDF';
 
 /**
  * Registration Page
@@ -55,6 +57,8 @@ export default function Registration() {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
+  const [companyProfile, setCompanyProfile] = useState(null);
+
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -78,6 +82,10 @@ export default function Registration() {
     if (nextSrNo) {
       setForm((prev) => ({ ...prev, sr_no: nextSrNo }));
     }
+
+    // Load company profile for PDF
+    const profile = await execute(() => window.api.company.get());
+    if (profile) setCompanyProfile(profile);
   }
 
   function handleChange(e) {
@@ -186,22 +194,30 @@ export default function Registration() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="page-header flex justify-between items-center">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="page-title">Student Registration</h1>
-          <p className="page-subtitle">
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Student Registration</h1>
+          <p className="text-base text-slate-500 mt-1">
             Admission Form
             {activeYear && <span> — Financial Year: {activeYear.year_label}</span>}
           </p>
+        </div>
+        <div>
+          <PDFDownloadLink
+            document={<RegistrationFormPDF company={companyProfile} isEmpty={true} />}
+            fileName="empty_admission_form.pdf"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 transition-colors"
+          >
+            {({ loading }) => (loading ? 'Preparing PDF...' : 'Print Empty Form')}
+          </PDFDownloadLink>
         </div>
       </div>
 
       {/* Success Alert */}
       {successMessage && (
-        <div className="alert alert-success mb-4 animate-slide-up">
+        <div className="flex items-center gap-2 p-4 mb-6 text-emerald-800 bg-emerald-100 border border-emerald-200 rounded-lg">
           <UserPlus size={18} />
-          {successMessage}
+          <span className="font-medium">{successMessage}</span>
         </div>
       )}
 
@@ -218,7 +234,7 @@ export default function Registration() {
               <CardBody>
                 <div className="flex flex-col gap-4">
                   {/* Row 1: Sr.No */}
-                  <div className="form-row form-row-4">
+                  <div className="grid grid-cols-4 gap-4">
                     <Input
                       label="Sr. No"
                       name="sr_no"
@@ -226,8 +242,8 @@ export default function Registration() {
                       onChange={handleChange}
                       hint="Auto-generated"
                     />
-                    <div style={{ gridColumn: 'span 3' }}>
-                      <div className="form-row form-row-3">
+                    <div className="col-span-3">
+                      <div className="grid grid-cols-3 gap-4">
                         <Input
                           label="Surname"
                           name="surname"
@@ -256,7 +272,7 @@ export default function Registration() {
                   </div>
 
                   {/* Row 2: DOB, Class */}
-                  <div className="form-row form-row-3">
+                  <div className="grid grid-cols-3 gap-4">
                     <Input
                       label="Date of Birth"
                       name="dob"
@@ -272,7 +288,7 @@ export default function Registration() {
                       options={classOptions}
                       placeholder="Select class..."
                     />
-                    <div className="form-row form-row-2">
+                    <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Religion"
                         name="religion"
@@ -317,7 +333,7 @@ export default function Registration() {
                     onChange={handleChange}
                     placeholder="Father's full name"
                   />
-                  <div className="form-row form-row-2">
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Father's Education"
                       name="father_education"
@@ -351,7 +367,7 @@ export default function Registration() {
                     onChange={handleChange}
                     placeholder="Mother's full name"
                   />
-                  <div className="form-row form-row-2">
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Mother's Education"
                       name="mother_education"
@@ -385,7 +401,7 @@ export default function Registration() {
                     onChange={handleChange}
                     placeholder="e.g., Marathi, Hindi"
                   />
-                  <div className="form-row form-row-2">
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Emergency Contact — Mother"
                       name="emergency_contact_mother"
@@ -419,22 +435,22 @@ export default function Registration() {
                 <CardTitle>Student Photo</CardTitle>
               </CardHeader>
               <CardBody>
-                <div className="photo-upload">
+                <div className="flex flex-col items-center gap-4">
                   {/* Preview */}
-                  <div className="photo-preview">
+                  <div className="w-full aspect-[3/4] max-w-[200px] border-2 border-dashed border-slate-300 rounded-lg overflow-hidden flex flex-col items-center justify-center bg-slate-50 relative">
                     {photoPreview ? (
-                      <img src={photoPreview} alt="Student photo" />
+                      <img src={photoPreview} alt="Student photo" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="photo-preview-placeholder">
-                        <Camera size={32} />
-                        <span className="text-xs">No photo</span>
-                      </div>
+                      <>
+                        <Camera size={32} className="text-slate-400 mb-2" />
+                        <span className="text-xs text-slate-500">No photo</span>
+                      </>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="photo-actions">
-                    <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                  <div className="flex gap-2 justify-center w-full">
+                    <label className="inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
                       <Upload size={14} />
                       Upload
                       <input
@@ -442,7 +458,7 @@ export default function Registration() {
                         type="file"
                         accept="image/*"
                         onChange={handleFileUpload}
-                        style={{ display: 'none' }}
+                        className="hidden"
                       />
                     </label>
                     <Button
@@ -472,7 +488,7 @@ export default function Registration() {
               <CardBody>
                 <div className="text-sm text-secondary">
                   <p className="font-semibold mb-2">Admission Form Info</p>
-                  <ul style={{ paddingLeft: '1rem', listStyle: 'disc' }}>
+                  <ul className="pl-4 list-disc space-y-1 mt-2 text-slate-600">
                     <li>Sr. No is auto-generated</li>
                     <li>Only Student Name is required</li>
                     <li>Photo can be added later</li>

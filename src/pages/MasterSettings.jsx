@@ -207,9 +207,9 @@ export default function MasterSettings() {
   return (
     <div>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Master Settings</h1>
-        <p className="page-subtitle">Configure financial years and class definitions</p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 leading-tight">Master Settings</h1>
+        <p className="text-base text-slate-500 mt-1">Configure financial years and class definitions</p>
       </div>
 
       {/* Financial Years Section */}
@@ -282,7 +282,7 @@ export default function MasterSettings() {
             required
             hint="Short label like '26-27' for the academic year 2026-2027"
           />
-          <div className="form-row form-row-2">
+          <div className="grid grid-cols-2 gap-4">
             <Input
               label="Start Date"
               name="start_date"
@@ -298,14 +298,15 @@ export default function MasterSettings() {
               onChange={(e) => setYearForm((p) => ({ ...p, end_date: e.target.value }))}
             />
           </div>
-          <div className="form-checkbox-item">
+          <div className="flex items-center gap-3 mt-2">
             <input
               type="checkbox"
               id="is_active"
               checked={yearForm.is_active}
               onChange={(e) => setYearForm((p) => ({ ...p, is_active: e.target.checked }))}
+              className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
             />
-            <label htmlFor="is_active" className="form-label" style={{ marginBottom: 0 }}>
+            <label htmlFor="is_active" className="text-sm font-medium text-slate-900 cursor-pointer">
               Set as Active Year
             </label>
           </div>
