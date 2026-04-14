@@ -24,7 +24,9 @@ const styles = StyleSheet.create({
 
 export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }) => {
   const getVal = (val) => isEmpty ? '' : (val || '');
-  
+
+
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -35,11 +37,11 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
             <Text>{company?.address || 'School Address'}</Text>
             <Text>Phone: {company?.phone || '-'}</Text>
           </View>
-          {company?.logo_path && !isEmpty && (
+          {company?.logo_base64 && (
             <View>
               {/* Note: This requires the logo to be accessible via URL or base64. 
                   In Electron, we might need to pass the base64 string directly */}
-              {localPhotoUrl && <Image src={localPhotoUrl} style={styles.logoBody} />}
+              <Image src={company.logo_base64} style={styles.logoBody} />
             </View>
           )}
         </View>

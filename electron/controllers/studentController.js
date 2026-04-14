@@ -106,7 +106,9 @@ function registerStudentHandlers() {
     try {
       const photosDir = getPhotosDir();
       const ext = path.extname(fileName) || '.jpg';
-      const safeName = `student_${Date.now()}${ext}`;
+      const isLogo = fileName && fileName.startsWith('logo_');
+      const prefix = isLogo ? 'logo_' : 'student_';
+      const safeName = `${prefix}${Date.now()}${ext}`;
       const filePath = path.join(photosDir, safeName);
 
       // Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")

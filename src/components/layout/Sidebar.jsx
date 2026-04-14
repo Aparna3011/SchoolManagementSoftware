@@ -27,7 +27,7 @@ export function Sidebar() {
       {/* Brand */}
       <div className="px-5 py-6 border-b border-white/10 flex items-center gap-3">
         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0 shadow-md">
-          R
+          SMS
         </div>
         <div>
           <div className="text-white text-sm font-semibold leading-tight tracking-wide">School Management System</div>
@@ -43,10 +43,9 @@ export function Sidebar() {
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 outline-none ${
-                isActive 
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 outline-none ${isActive
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`
             }
           >

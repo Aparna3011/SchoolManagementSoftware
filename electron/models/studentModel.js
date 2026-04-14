@@ -95,7 +95,7 @@ const StudentModel = {
       father_name, father_education, father_occupation,
       mother_name, mother_education, mother_occupation,
       mother_tongue, emergency_contact_mother, emergency_contact_father,
-      year_id,
+      year_id, agreed_fee,
     } = data;
 
     const result = db.prepare(`
@@ -105,8 +105,8 @@ const StudentModel = {
         father_name, father_education, father_occupation,
         mother_name, mother_education, mother_occupation,
         mother_tongue, emergency_contact_mother, emergency_contact_father,
-        year_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        year_id, agreed_fee
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       sr_no || this.getNextSrNo(),
       photo_path || '',
@@ -128,6 +128,7 @@ const StudentModel = {
       emergency_contact_mother || '',
       emergency_contact_father || '',
       year_id || null,
+      agreed_fee || 0,
     );
 
     return this.getById(result.lastInsertRowid);
@@ -149,7 +150,7 @@ const StudentModel = {
       'father_name', 'father_education', 'father_occupation',
       'mother_name', 'mother_education', 'mother_occupation',
       'mother_tongue', 'emergency_contact_mother', 'emergency_contact_father',
-      'year_id', 'is_active',
+      'year_id', 'is_active', 'agreed_fee',
     ];
 
     const setClauses = [];

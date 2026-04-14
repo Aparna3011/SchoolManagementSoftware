@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, Camera, Upload, X, RotateCcw, UserPlus } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
 import { Input, Textarea } from '../components/ui/Input';
@@ -31,6 +31,7 @@ const INITIAL_FORM = {
   father_first_name: '',
   dob: '',
   class_id: '',
+  agreed_fee: '',
   religion: '',
   caste: '',
   address: '',
@@ -85,12 +86,35 @@ export default function Registration() {
 
     // Load company profile for PDF
     const profile = await execute(() => window.api.company.get());
-    if (profile) setCompanyProfile(profile);
+    if (profile) {
+      if (profile.logo_path) {
+        const photoResult = await execute(() => window.api.student.getPhoto(profile.logo_path));
+        if (photoResult) {
+          profile.logo_base64 = photoResult;
+        }
+      }
+      setCompanyProfile(profile);
+    }
   }
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => {
+      const updated = { ...prev, [name]: value };
+
+      // Auto-fill agreed fee when class changes
+      if (name === 'class_id') {
+        const selectedClass = classes.find(c => c.id.toString() === value);
+        if (selectedClass) {
+          updated.agreed_fee = selectedClass.base_fee || '';
+        } else {
+          updated.agreed_fee = '';
+        }
+      }
+
+      return updated;
+    });
 
     // Clear error on change
     if (errors[name]) {
@@ -161,6 +185,7 @@ export default function Registration() {
     const payload = {
       ...form,
       class_id: form.class_id ? parseInt(form.class_id, 10) : null,
+      agreed_fee: form.agreed_fee ? parseFloat(form.agreed_fee) : 0,
       photo_path: photoPath,
       year_id: activeYear?.id || null,
     };
@@ -169,6 +194,29 @@ export default function Registration() {
 
     if (created) {
       setSuccessMessage(`Student "${created.student_name}" registered successfully! (Sr. No: ${created.sr_no})`);
+
+      try {
+        const blob = await pdf(
+          <RegistrationFormPDF
+            company={companyProfile}
+            student={created}
+            localPhotoUrl={photoPreview}
+          />
+        ).toBlob();
+
+        console.log('blob', companyProfile)
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Admission_${created.sr_no}_${created.student_name}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Failed to generate PDF automatically:', err);
+      }
 
       // Reset form
       setForm({ ...INITIAL_FORM });
@@ -271,7 +319,7 @@ export default function Registration() {
                     </div>
                   </div>
 
-                  {/* Row 2: DOB, Class */}
+                  {/* Row 2: DOB, Class, Fees */}
                   <div className="grid grid-cols-3 gap-4">
                     <Input
                       label="Date of Birth"
@@ -288,22 +336,32 @@ export default function Registration() {
                       options={classOptions}
                       placeholder="Select class..."
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Religion"
-                        name="religion"
-                        value={form.religion}
-                        onChange={handleChange}
-                        placeholder="Religion"
-                      />
-                      <Input
-                        label="Caste"
-                        name="caste"
-                        value={form.caste}
-                        onChange={handleChange}
-                        placeholder="Caste"
-                      />
-                    </div>
+                    <Input
+                      label="Agreed Fees"
+                      name="agreed_fee"
+                      type="number"
+                      value={form.agreed_fee}
+                      onChange={handleChange}
+                      placeholder="e.g. 5000"
+                    />
+                  </div>
+
+                  {/* Row 2.5: Religion & Caste */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Religion"
+                      name="religion"
+                      value={form.religion}
+                      onChange={handleChange}
+                      placeholder="Religion"
+                    />
+                    <Input
+                      label="Caste"
+                      name="caste"
+                      value={form.caste}
+                      onChange={handleChange}
+                      placeholder="Caste"
+                    />
                   </div>
 
                   {/* Row 3: Address */}
@@ -492,7 +550,7 @@ export default function Registration() {
                     <li>Sr. No is auto-generated</li>
                     <li>Only Student Name is required</li>
                     <li>Photo can be added later</li>
-                    <li>Class fee will be set from Master Settings</li>
+                    <li>Agreed Fee is auto-filled by Class but can be edited</li>
                   </ul>
                 </div>
               </CardBody>
