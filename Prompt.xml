@@ -1,0 +1,58 @@
+<ProjectRequest>
+    <AppDetails>
+        <Name>School Management System (Rainbow Play School)</Name>
+        <Stack>React, Electron, SQLite</Stack>
+        <Platform>Windows Desktop</Platform>
+        <Architecture>Local-First / Offline</Architecture>
+    </AppDetails>
+
+    <DatabaseArchitecture>
+        <MasterTables>
+            <Table name="Company_Profile">
+                <Purpose>Store firm details for white-labeling the UI and Reports.</Purpose>
+                <Fields>FirmName, Address, PrimaryPhone, Email, LogoPath, GST_RegNo</Fields>
+            </Table>
+            <Table name="Financial_Years">
+                <Fields>YearID, YearLabel (e.g., 2026-27), IsActive</Fields>
+            </Table>
+            <Table name="Classes_Master">
+                <Fields>ClassID, ClassName, SessionTime, BaseFee, YearID</Fields>
+            </Table>
+        </MasterTables>
+        
+        <TransactionTables>
+            <Table name="Students">
+                <Fields>StudentID, PhotoPath, FullName, DOB, ClassID, Religion, Caste, Address, FatherDetails, MotherDetails, EmergencyContact, DateOfAdmission</Fields>
+            </Table>
+            <Table name="Payments">
+                <Fields>PaymentID, StudentID, InvoiceNumber, AmountPaid, PaymentDate, PaymentMode, BalanceRemaining</Fields>
+            </Table>
+        </TransactionTables>
+    </DatabaseArchitecture>
+
+    <LogicRequirements>
+        <InvoiceGeneration>
+            <Format>RK/{FinancialYear}/{AutoIncrementID}</Format>
+            <Example>RK/26-27/001</Example>
+        </InvoiceGeneration>
+        <ImageHandling>
+            <Feature>Webcam capture and local File Upload.</Feature>
+            <Storage>Save files to %AppData%/SchoolData/Photos and store paths in SQLite.</Storage>
+        </ImageHandling>
+    </LogicRequirements>
+
+    <UI_PageRequirements>
+        <Page name="Dashboard">Visual stats: Total Students, Collection Today, Pending Fees.</Page>
+        <Page name="Company Profile">Form to edit Firm Name, Address, Phone, and Upload/Change Logo.</Page>
+        <Page name="Master Settings">Add/Edit Classes, set Session Times, and define Fees per class.</Page>
+        <Page name="Registration">Detailed form based on the attached image with Profile Photo integration.</Page>
+        <Page name="Fees">Search student -> View Ledger -> Accept Part/Full Payment -> Generate Invoice.</Page>
+    </UI_PageRequirements>
+
+    <OutputDeliverables>
+        <Item>Complete SQLite Schema SQL.</Item>
+        <Item>React state logic for handling dynamic Invoice Numbering.</Item>
+        <Item>Electron 'main.js' configuration for local file system access (FS).</Item>
+        <Item>A PDF Generation strategy (using jsPDF or react-pdf) to overlay database data onto a digital replica of the paper admission form.</Item>
+    </OutputDeliverables>
+</ProjectRequest>

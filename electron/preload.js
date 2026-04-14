@@ -1,0 +1,62 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+/**
+ * Preload Script
+ * 
+ * Exposes a safe API to the renderer process via contextBridge.
+ * The renderer accesses these methods through `window.api`.
+ * 
+ * Pattern: window.api.<domain>.<method>(args)
+ * Each method returns: { success: boolean, data?: any, error?: string }
+ */
+
+contextBridge.exposeInMainWorld('api', {
+  // ============ COMPANY PROFILE ============
+  company: {
+    get: () => ipcRenderer.invoke('company:get'),
+    update: (data) => ipcRenderer.invoke('company:update', data),
+  },
+
+  // ============ FINANCIAL YEARS ============
+  financialYear: {
+    getAll: () => ipcRenderer.invoke('financialYear:getAll'),
+    getActive: () => ipcRenderer.invoke('financialYear:getActive'),
+    create: (data) => ipcRenderer.invoke('financialYear:create', data),
+    update: (id, data) => ipcRenderer.invoke('financialYear:update', { id, data }),
+    setActive: (id) => ipcRenderer.invoke('financialYear:setActive', id),
+    delete: (id) => ipcRenderer.invoke('financialYear:delete', id),
+  },
+
+  // ============ CLASSES ============
+  class: {
+    getAll: (yearId) => ipcRenderer.invoke('class:getAll', yearId),
+    getById: (id) => ipcRenderer.invoke('class:getById', id),
+    create: (data) => ipcRenderer.invoke('class:create', data),
+    update: (id, data) => ipcRenderer.invoke('class:update', { id, data }),
+    delete: (id) => ipcRenderer.invoke('class:delete', id),
+  },
+
+  // ============ STUDENTS ============
+  student: {
+    getAll: (filters) => ipcRenderer.invoke('student:getAll', filters),
+    getById: (id) => ipcRenderer.invoke('student:getById', id),
+    getNextSrNo: () => ipcRenderer.invoke('student:getNextSrNo'),
+    create: (data) => ipcRenderer.invoke('student:create', data),
+    update: (id, data) => ipcRenderer.invoke('student:update', { id, data }),
+    getStats: () => ipcRenderer.invoke('student:getStats'),
+    getRecent: (limit) => ipcRenderer.invoke('student:getRecent', limit),
+    savePhoto: (base64Data, fileName) =>
+      ipcRenderer.invoke('student:savePhoto', { base64Data, fileName }),
+    getPhoto: (photoPath) => ipcRenderer.invoke('student:getPhoto', photoPath),
+  },
+
+  // ============ PAYMENTS ============
+  payment: {
+    getByStudent: (studentId) => ipcRenderer.invoke('payment:getByStudent', studentId),
+    create: (data) => ipcRenderer.invoke('payment:create', data),
+    cancel: (id) => ipcRenderer.invoke('payment:cancel', id),
+    getLedger: (studentId) => ipcRenderer.invoke('payment:getLedger', studentId),
+    getStats: () => ipcRenderer.invoke('payment:getStats'),
+    generateInvoiceNo: () => ipcRenderer.invoke('payment:generateInvoiceNo'),
+  },
+});

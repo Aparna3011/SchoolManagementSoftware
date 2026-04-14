@@ -1,0 +1,35 @@
+{
+  "name": "schoolmanagementsoftware",
+  "version": "1.0.0",
+  "description": "",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:vite": "vite",
+    "dev:electron": "electron .",
+    "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && npm run dev:electron\"",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.8",
+    "wait-on": "^9.0.5"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "date-fns": "^4.1.0",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.1",
+    "react-webcam": "^7.2.0"
+  }
+}
