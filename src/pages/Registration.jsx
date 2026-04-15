@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, Camera, Upload, X, RotateCcw, UserPlus } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
 import { Input, Textarea } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
+import { PDFDownloadLink, pdf, BlobProvider } from '@react-pdf/renderer';
 import { Modal } from '../components/ui/Modal';
 import { RegistrationFormPDF } from '../components/pdf/RegistrationFormPDF';
 
@@ -45,6 +46,8 @@ const INITIAL_FORM = {
   emergency_contact_mother: '',
   emergency_contact_father: '',
 };
+
+
 
 export default function Registration() {
   const { execute, loading } = useDatabase();
@@ -94,6 +97,7 @@ export default function Registration() {
         }
       }
       setCompanyProfile(profile);
+       console.log('company', profile)
     }
   }
 
@@ -204,7 +208,7 @@ export default function Registration() {
           />
         ).toBlob();
 
-        console.log('blob', companyProfile)
+       
 
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -239,6 +243,17 @@ export default function Registration() {
     value: c.id.toString(),
     label: `${c.class_name}${c.session_time ? ` (${c.session_time})` : ''}`,
   }));
+
+  const isDevMode = import.meta.env.MODE === 'development';
+
+const selectedClass = classes.find((c) => c.id.toString() === form.class_id);
+
+const livePreviewStudent = {
+  ...form,
+  class_name: selectedClass?.class_name || '',
+  year_label: activeYear?.year_label || '',
+  admission_date: new Date().toISOString(),
+};
 
   return (
     <div>
@@ -589,6 +604,43 @@ export default function Registration() {
           />
         </div>
       </Modal>
+      {isDevMode && (
+  <Card className="mt-6">
+    <CardHeader>
+      <CardTitle>Live Admission Preview (Development Only)</CardTitle>
+    </CardHeader>
+    <CardBody>
+      <div className="text-xs text-slate-500 mb-3">
+        This preview updates as you type above.
+      </div>
+
+      <BlobProvider
+        document={
+          <RegistrationFormPDF
+            company={companyProfile}
+            student={livePreviewStudent}
+            localPhotoUrl={photoPreview}
+          />
+        }
+      >
+        {({ url, loading, error }) => {
+          if (loading) return <div className="text-sm text-slate-500">Rendering preview...</div>;
+          if (error) return <div className="text-sm text-red-600">Preview failed to render.</div>;
+          if (!url) return null;
+
+          return (
+            <iframe
+              title="Registration PDF Preview"
+              src={url}
+              className="w-full border border-slate-200 rounded-md"
+              style={{ height: '900px' }}
+            />
+          );
+        }}
+      </BlobProvider>
+    </CardBody>
+  </Card>
+)}
     </div>
   );
 }

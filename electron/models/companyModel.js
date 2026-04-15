@@ -24,19 +24,78 @@ const CompanyModel = {
    */
   update(data) {
     const db = getDatabase();
-    const { firm_name, address, phone, email, logo_path, registration_no } = data;
+   const {
+  firm_name,
+  group_name,
+  school_name,
+  branch_name,
+  address,
+  city,
+  state,
+  pincode,
+  country,
+  phone,
+  alt_phone,
+  email,
+  website,
+  registration_no,
+  udise_no,
+  affiliation_no,
+  gstin,
+  principal_name,
+  contact_person,
+  tagline,
+  logo_path
+} = data;
 
     db.prepare(`
-      UPDATE Company_Profile
-      SET firm_name = COALESCE(?, firm_name),
-          address = COALESCE(?, address),
-          phone = COALESCE(?, phone),
-          email = COALESCE(?, email),
-          logo_path = COALESCE(?, logo_path),
-          registration_no = COALESCE(?, registration_no),
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `).run(firm_name, address, phone, email, logo_path, registration_no);
+  UPDATE Company_Profile
+  SET firm_name = COALESCE(?, firm_name),
+      group_name = COALESCE(?, group_name),
+      school_name = COALESCE(?, school_name),
+      branch_name = COALESCE(?, branch_name),
+      address = COALESCE(?, address),
+      city = COALESCE(?, city),
+      state = COALESCE(?, state),
+      pincode = COALESCE(?, pincode),
+      country = COALESCE(?, country),
+      phone = COALESCE(?, phone),
+      alt_phone = COALESCE(?, alt_phone),
+      email = COALESCE(?, email),
+      website = COALESCE(?, website),
+      registration_no = COALESCE(?, registration_no),
+      udise_no = COALESCE(?, udise_no),
+      affiliation_no = COALESCE(?, affiliation_no),
+      gstin = COALESCE(?, gstin),
+      principal_name = COALESCE(?, principal_name),
+      contact_person = COALESCE(?, contact_person),
+      tagline = COALESCE(?, tagline),
+      logo_path = COALESCE(?, logo_path),
+      updated_at = CURRENT_TIMESTAMP
+  WHERE id = 1
+`).run(
+  firm_name,
+  group_name,
+  school_name,
+  branch_name,
+  address,
+  city,
+  state,
+  pincode,
+  country,
+  phone,
+  alt_phone,
+  email,
+  website,
+  registration_no,
+  udise_no,
+  affiliation_no,
+  gstin,
+  principal_name,
+  contact_person,
+  tagline,
+  logo_path
+);
 
     return this.get();
   },

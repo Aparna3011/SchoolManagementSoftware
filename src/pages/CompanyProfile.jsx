@@ -7,22 +7,39 @@ import { Button } from '../components/ui/Button';
 
 /**
  * Company Profile Page
- * 
- * Form to edit the school's firm name, address, phone, email, and logo.
- * Singleton row — always updates id=1.
+ *
+ * Extended form for institute identity, contact, statutory details, and logo.
+ * Singleton row - always updates id=1.
  */
+
+const INITIAL_FORM = {
+  firm_name: '',
+  group_name: '',
+  school_name: '',
+  branch_name: '',
+  principal_name: '',
+  contact_person: '',
+  tagline: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  country: 'India',
+  phone: '',
+  alt_phone: '',
+  email: '',
+  website: '',
+  registration_no: '',
+  udise_no: '',
+  affiliation_no: '',
+  gstin: '',
+  logo_path: '',
+};
 
 export default function CompanyProfile() {
   const { execute, loading } = useDatabase();
 
-  const [form, setForm] = useState({
-    firm_name: '',
-    address: '',
-    phone: '',
-    email: '',
-    registration_no: '',
-    logo_path: '',
-  });
+  const [form, setForm] = useState({ ...INITIAL_FORM });
   const [saved, setSaved] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
 
@@ -35,14 +52,28 @@ export default function CompanyProfile() {
     if (profile) {
       setForm({
         firm_name: profile.firm_name || '',
+        group_name: profile.group_name || '',
+        school_name: profile.school_name || '',
+        branch_name: profile.branch_name || '',
+        principal_name: profile.principal_name || '',
+        contact_person: profile.contact_person || '',
+        tagline: profile.tagline || '',
         address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        pincode: profile.pincode || '',
+        country: profile.country || 'India',
         phone: profile.phone || '',
+        alt_phone: profile.alt_phone || '',
         email: profile.email || '',
+        website: profile.website || '',
         registration_no: profile.registration_no || '',
+        udise_no: profile.udise_no || '',
+        affiliation_no: profile.affiliation_no || '',
+        gstin: profile.gstin || '',
         logo_path: profile.logo_path || '',
       });
 
-      // Load logo preview if path exists
       if (profile.logo_path) {
         const photoResult = await execute(() => window.api.student.getPhoto(profile.logo_path));
         if (photoResult) {
@@ -67,14 +98,15 @@ export default function CompanyProfile() {
       const base64 = reader.result;
       setLogoPreview(base64);
 
-      // Save the logo to AppData
       const savedPath = await execute(() =>
         window.api.student.savePhoto(base64, `logo_${file.name}`)
       );
+
       if (savedPath) {
         setForm((prev) => ({ ...prev, logo_path: savedPath }));
       }
     };
+
     reader.readAsDataURL(file);
   }
 
@@ -86,63 +118,203 @@ export default function CompanyProfile() {
 
   return (
     <div>
-      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 leading-tight">Company Profile</h1>
-        <p className="text-base text-slate-500 mt-1">Manage your school's identity and branding details</p>
+        <p className="text-base text-slate-500 mt-1">Manage institute identity, contacts, and statutory details</p>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Main Form */}
         <div style={{ gridColumn: 'span 2' }}>
           <Card>
             <CardHeader>
-              <CardTitle>School Information</CardTitle>
+              <CardTitle>Institution Information</CardTitle>
             </CardHeader>
+
             <CardBody>
-              <div className="flex flex-col gap-4">
-                <Input
-                  label="Firm Name"
-                  name="firm_name"
-                  value={form.firm_name}
-                  onChange={handleChange}
-                  placeholder="e.g., School Management System"
-                  required
-                />
-                <Textarea
-                  label="Address"
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  placeholder="Full address..."
-                  rows={3}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Phone Number"
-                    name="phone"
-                    value={form.phone}
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-slate-700">Identity</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Group Name"
+                      name="group_name"
+                      value={form.group_name}
+                      onChange={handleChange}
+                      placeholder="e.g., Group of Institutions"
+                    />
+                    <Input
+                      label="Firm Name"
+                      name="firm_name"
+                      value={form.firm_name}
+                      onChange={handleChange}
+                      placeholder="e.g., Rainbow Play School"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="School Name"
+                      name="school_name"
+                      value={form.school_name}
+                      onChange={handleChange}
+                      placeholder="e.g., Rainbow Pre Primary School"
+                    />
+                    <Input
+                      label="Branch Name"
+                      name="branch_name"
+                      value={form.branch_name}
+                      onChange={handleChange}
+                      placeholder="e.g., Shukrawar Peth Branch"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Principal Name"
+                      name="principal_name"
+                      value={form.principal_name}
+                      onChange={handleChange}
+                      placeholder="e.g., Mrs. Kavita Patil"
+                    />
+                    <Input
+                      label="Contact Person"
+                      name="contact_person"
+                      value={form.contact_person}
+                      onChange={handleChange}
+                      placeholder="e.g., Admin Office"
+                    />
+                  </div>
+
+                  <Textarea
+                    label="Tagline / Motto"
+                    name="tagline"
+                    value={form.tagline}
                     onChange={handleChange}
-                    placeholder="e.g., 9653104744"
-                  />
-                  <Input
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="e.g., info@rainbowschool.com"
+                    placeholder="e.g., Nurturing young minds for a brighter tomorrow"
+                    rows={2}
                   />
                 </div>
-                <Input
-                  label="Registration No."
-                  name="registration_no"
-                  value={form.registration_no}
-                  onChange={handleChange}
-                  placeholder="e.g., Mah/13402/1-4-1998"
-                />
+
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-slate-700">Address</p>
+                  <Textarea
+                    label="Address"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    placeholder="Full address..."
+                    rows={3}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="City"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      placeholder="e.g., Kolhapur"
+                    />
+                    <Input
+                      label="State"
+                      name="state"
+                      value={form.state}
+                      onChange={handleChange}
+                      placeholder="e.g., Maharashtra"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Pincode"
+                      name="pincode"
+                      value={form.pincode}
+                      onChange={handleChange}
+                      placeholder="e.g., 416002"
+                    />
+                    <Input
+                      label="Country"
+                      name="country"
+                      value={form.country}
+                      onChange={handleChange}
+                      placeholder="e.g., India"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-slate-700">Contact</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Phone Number"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="e.g., 9653104744"
+                    />
+                    <Input
+                      label="Alternate Phone"
+                      name="alt_phone"
+                      value={form.alt_phone}
+                      onChange={handleChange}
+                      placeholder="e.g., 0231-2456789"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="e.g., info@school.com"
+                    />
+                    <Input
+                      label="Website"
+                      name="website"
+                      value={form.website}
+                      onChange={handleChange}
+                      placeholder="e.g., https://school.edu.in"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold text-slate-700">Statutory Details</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Registration No."
+                      name="registration_no"
+                      value={form.registration_no}
+                      onChange={handleChange}
+                      placeholder="e.g., Mah/13402/1-4-1998"
+                    />
+                    <Input
+                      label="UDISE No."
+                      name="udise_no"
+                      value={form.udise_no}
+                      onChange={handleChange}
+                      placeholder="e.g., 27340500123"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Affiliation No."
+                      name="affiliation_no"
+                      value={form.affiliation_no}
+                      onChange={handleChange}
+                      placeholder="e.g., CBSE/1132456"
+                    />
+                    <Input
+                      label="GSTIN"
+                      name="gstin"
+                      value={form.gstin}
+                      onChange={handleChange}
+                      placeholder="e.g., 27ABCDE1234F1Z5"
+                    />
+                  </div>
+                </div>
               </div>
             </CardBody>
+
             <CardFooter>
               {saved && (
                 <span className="text-sm" style={{ color: 'var(--color-success)' }}>
@@ -157,7 +329,6 @@ export default function CompanyProfile() {
           </Card>
         </div>
 
-        {/* Logo Upload */}
         <Card>
           <CardHeader>
             <CardTitle>School Logo</CardTitle>
@@ -174,6 +345,7 @@ export default function CompanyProfile() {
                   </div>
                 )}
               </div>
+
               <div className="flex gap-2 justify-center w-full">
                 <label className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
                   <Upload size={16} />
@@ -186,6 +358,7 @@ export default function CompanyProfile() {
                   />
                 </label>
               </div>
+
               <p className="text-xs text-slate-500 text-center max-w-[200px]">
                 Upload a square image for best results (PNG or JPG)
               </p>
