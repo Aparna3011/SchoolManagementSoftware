@@ -45,6 +45,7 @@ export default function Registration() {
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [actionLoading, setActionLoading] = useState('');
   const [companyProfile, setCompanyProfile] = useState(null);
 
   const webcamRef = useRef(null);
@@ -171,9 +172,20 @@ export default function Registration() {
     return Object.keys(newErrors).length === 0;
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function createAdmissionPdfBlob(createdStudent) {
+    return pdf(
+      <RegistrationFormPDF
+        company={companyProfile}
+        student={{ ...createdStudent, father_first_name: form.father_first_name }}
+        localPhotoUrl={photoPreview}
+      />,
+    ).toBlob();
+  }
+
+  async function handleComplete(action = 'complete') {
     if (!validateForm()) return;
+
+    setActionLoading(action);
 
     const payload = {
       ...form,
@@ -188,27 +200,39 @@ export default function Registration() {
     const created = await execute(() => window.api.student.create(payload));
 
     if (created) {
-      setSuccessMessage(`Student \"${created.student_name}\" registered successfully! (USIN: ${created.usin})`);
+      setSuccessMessage(`Student "${created.student_name}" registered successfully! (USIN: ${created.usin})`);
 
       try {
-        const blob = await pdf(
-          <RegistrationFormPDF
-            company={companyProfile}
-            student={{ ...created, father_first_name: form.father_first_name }}
-            localPhotoUrl={photoPreview}
-          />,
-        ).toBlob();
+        if (action === 'download' || action === 'print') {
+          const blob = await createAdmissionPdfBlob(created);
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Admission_${created.usin}_${created.student_name}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+          if (action === 'download') {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Admission_${created.usin}_${created.student_name}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }
+
+          if (action === 'print') {
+            const arrayBuffer = await blob.arrayBuffer();
+            const binary = new Uint8Array(arrayBuffer);
+            let binaryString = '';
+            for (let i = 0; i < binary.length; i += 1) {
+              binaryString += String.fromCharCode(binary[i]);
+            }
+            const base64Pdf = btoa(binaryString);
+            const printed = await execute(() => window.api.student.printPdf(base64Pdf));
+            if (!printed) {
+              throw new Error('Failed to send admission form to the default printer.');
+            }
+          }
+        }
       } catch (err) {
-        console.error('Failed to generate PDF automatically:', err);
+        console.error('Failed to process admission PDF action:', err);
       }
 
       setForm({ ...INITIAL_FORM });
@@ -218,6 +242,8 @@ export default function Registration() {
       setErrors({});
       setTimeout(() => setSuccessMessage(''), 5000);
     }
+
+    setActionLoading('');
   }
 
   const classOptions = classes.map((c) => ({
@@ -237,7 +263,7 @@ export default function Registration() {
         </div>
         <div>
           <PDFDownloadLink
-            document={<RegistrationFormPDF company={companyProfile} isEmpty={true} />}
+            document={<RegistrationFormPDF company={companyProfile} student={{}} localPhotoUrl={null} isEmpty={true} />}
             fileName="empty_admission_form.pdf"
             className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 transition-colors"
           >
@@ -259,7 +285,7 @@ export default function Registration() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => e.preventDefault()}>
         <div className="grid grid-cols-3 gap-6">
           <div style={{ gridColumn: 'span 2' }} className="flex flex-col gap-6">
             <Card>
@@ -321,6 +347,8 @@ export default function Registration() {
                       onChange={handleChange}
                       options={classOptions}
                       placeholder="Select class..."
+                      required
+                      error={errors.class_id}
                     />
                     <Input
                       label="Agreed Annual Fee"
@@ -459,9 +487,35 @@ export default function Registration() {
                 </div>
               </CardBody>
               <CardFooter>
-                <Button type="submit" variant="primary" size="lg" disabled={loading}>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  disabled={loading || !!actionLoading}
+                  onClick={() => handleComplete('complete')}
+                >
                   <Save size={18} />
-                  {loading ? 'Saving...' : 'Register Student'}
+                  {actionLoading === 'complete' ? 'Completing...' : 'Complete'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  disabled={loading || !!actionLoading}
+                  onClick={() => handleComplete('print')}
+                >
+                  <Save size={18} />
+                  {actionLoading === 'print' ? 'Printing...' : 'Complete and Print'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="success"
+                  size="lg"
+                  disabled={loading || !!actionLoading}
+                  onClick={() => handleComplete('download')}
+                >
+                  <Save size={18} />
+                  {actionLoading === 'download' ? 'Downloading...' : 'Complete and Download'}
                 </Button>
               </CardFooter>
             </Card>

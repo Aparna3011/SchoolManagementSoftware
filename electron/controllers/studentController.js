@@ -2,7 +2,8 @@ const StudentModel = require('../models/studentModel');
 const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { app } = require('electron');
+const { app, BrowserWindow } = require('electron');
+const { pathToFileURL } = require('url');
 
 /**
  * Student Controller
@@ -11,7 +12,7 @@ const { app } = require('electron');
  * Includes photo handling (save to AppData).
  * Routes: student:getAll, student:getById, student:generateUSIN,
  *         student:create, student:update, student:getStats, student:getRecent,
- *         student:savePhoto
+ *         student:savePhoto, student:printPdf
  */
 
 /**
@@ -139,6 +140,62 @@ function registerStudentHandlers() {
     } catch (error) {
       console.error('[StudentController] getPhoto error:', error);
       return { success: false, error: error.message };
+    }
+  });
+
+  /**
+   * Print a PDF (base64) directly to the default printer.
+   */
+  ipcMain.handle('student:printPdf', async (_event, { base64Pdf }) => {
+    let printWindow = null;
+    let tempFilePath = null;
+
+    try {
+      if (!base64Pdf) {
+        throw new Error('No PDF data provided for printing.');
+      }
+
+      const tempDir = app.getPath('temp');
+      tempFilePath = path.join(tempDir, `admission_${Date.now()}.pdf`);
+      fs.writeFileSync(tempFilePath, Buffer.from(base64Pdf, 'base64'));
+
+      printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+        },
+      });
+
+      await printWindow.loadURL(pathToFileURL(tempFilePath).toString());
+
+      await new Promise((resolve, reject) => {
+        printWindow.webContents.print(
+          { silent: true, printBackground: true },
+          (success, failureReason) => {
+            if (!success) {
+              reject(new Error(failureReason || 'Failed to print PDF.'));
+              return;
+            }
+            resolve(true);
+          },
+        );
+      });
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('[StudentController] printPdf error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      if (printWindow && !printWindow.isDestroyed()) {
+        printWindow.close();
+      }
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (_error) {
+          // Best-effort temp file cleanup.
+        }
+      }
     }
   });
 }
