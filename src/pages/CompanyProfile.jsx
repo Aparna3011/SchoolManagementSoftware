@@ -6,7 +6,8 @@ import { Input, Textarea } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 
 const INITIAL_FORM = {
-  school_code: 'SV',
+  school_code: '',
+  group_name: '',
   firm_name: '',
   tagline: '',
   address: '',
@@ -35,6 +36,7 @@ export default function CompanyProfile() {
     if (profile) {
       setForm({
         school_code: profile.school_code || 'SV',
+        group_name: profile.group_name || 'S V Group of Institutions',
         firm_name: profile.firm_name || '',
         tagline: profile.tagline || '',
         address: profile.address || '',
@@ -105,12 +107,11 @@ export default function CompanyProfile() {
               <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Input
-                    label="School Code"
-                    name="school_code"
-                    value={form.school_code}
+                    label="Group Name"
+                    name="group_name"
+                    value={form.group_name}
                     onChange={handleChange}
-                    placeholder="e.g., SV"
-                    required
+                    placeholder="e.g., S V Group of Institutions"
                   />
                   <Input
                     label="School Name"
@@ -119,6 +120,23 @@ export default function CompanyProfile() {
                     onChange={handleChange}
                     placeholder="e.g., Rainbow Play School"
                     required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="School Code"
+                    name="school_code"
+                    value={form.school_code}
+                    onChange={handleChange}
+                    placeholder="e.g., SV"
+                    required
+                  />
+                  <Input
+                    label="Website"
+                    name="website"
+                    value={form.website}
+                    onChange={handleChange}
+                    placeholder="e.g., https://school.edu.in"
                   />
                 </div>
                 <Textarea
@@ -155,13 +173,6 @@ export default function CompanyProfile() {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Website"
-                    name="website"
-                    value={form.website}
-                    onChange={handleChange}
-                    placeholder="e.g., https://school.edu.in"
-                  />
                   <Input
                     label="Registration No."
                     name="reg_no"

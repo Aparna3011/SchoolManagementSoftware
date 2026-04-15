@@ -26,6 +26,7 @@ const CompanyModel = {
     const db = getDatabase();
     const {
       school_code,
+      group_name,
       firm_name,
       tagline,
       address,
@@ -41,6 +42,7 @@ const CompanyModel = {
     db.prepare(`
       UPDATE Company_Profile
       SET school_code = COALESCE(?, school_code),
+          group_name = COALESCE(?, group_name),
           firm_name = COALESCE(?, firm_name),
           tagline = COALESCE(?, tagline),
           address = COALESCE(?, address),
@@ -55,6 +57,7 @@ const CompanyModel = {
       WHERE id = 1
     `).run(
       school_code,
+      group_name,
       firm_name,
       tagline,
       address,

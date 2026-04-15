@@ -52,6 +52,7 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
         {/* Header */}
         <View style={styles.headerContainer}>
           <View style={{ flex: 1 }}>
+            {!!company?.group_name && <Text style={styles.addressText}>{company.group_name}</Text>}
             <Text style={styles.companyName}>{company?.firm_name || 'RAINBOW PLAY SCHOOL'}</Text>
             <Text style={styles.addressText}>{company?.address || '2118, D, Janwadkar\'s Complex, Shukrawar Peth, Kolhapur - 416 002'}</Text>
             <Text style={styles.addressText}>Mob: {company?.phone || '9653104744'}</Text>
