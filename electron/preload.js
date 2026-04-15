@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // ============ CLASSES ============
   class: {
-    getAll: (yearId) => ipcRenderer.invoke('class:getAll', yearId),
+    getAll: () => ipcRenderer.invoke('class:getAll'),
     getById: (id) => ipcRenderer.invoke('class:getById', id),
     create: (data) => ipcRenderer.invoke('class:create', data),
     update: (id, data) => ipcRenderer.invoke('class:update', { id, data }),
@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld('api', {
   student: {
     getAll: (filters) => ipcRenderer.invoke('student:getAll', filters),
     getById: (id) => ipcRenderer.invoke('student:getById', id),
-    getNextSrNo: () => ipcRenderer.invoke('student:getNextSrNo'),
+    generateUSIN: (academic_year_id, class_id) =>
+      ipcRenderer.invoke('student:generateUSIN', { academic_year_id, class_id }),
     create: (data) => ipcRenderer.invoke('student:create', data),
     update: (id, data) => ipcRenderer.invoke('student:update', { id, data }),
     getStats: () => ipcRenderer.invoke('student:getStats'),
@@ -52,11 +53,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // ============ PAYMENTS ============
   payment: {
-    getByStudent: (studentId) => ipcRenderer.invoke('payment:getByStudent', studentId),
+    getByEnrollment: (enrollmentId) => ipcRenderer.invoke('payment:getByEnrollment', enrollmentId),
     create: (data) => ipcRenderer.invoke('payment:create', data),
     cancel: (id) => ipcRenderer.invoke('payment:cancel', id),
-    getLedger: (studentId) => ipcRenderer.invoke('payment:getLedger', studentId),
+    getLedger: (enrollmentId) => ipcRenderer.invoke('payment:getLedger', enrollmentId),
     getStats: () => ipcRenderer.invoke('payment:getStats'),
-    generateInvoiceNo: () => ipcRenderer.invoke('payment:generateInvoiceNo'),
+    generateReceiptNo: () => ipcRenderer.invoke('payment:generateReceiptNo'),
   },
 });

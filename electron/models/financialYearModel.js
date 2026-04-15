@@ -1,85 +1,96 @@
 const { getDatabase } = require('../database/connection');
 
 /**
- * Financial Year Model
- * 
- * Data access layer for the Financial_Years table.
+ * Academic Year Model
+ *
+ * Data access layer for the Academic_Years table.
  */
 
 const FinancialYearModel = {
   /**
-   * Get all financial years ordered by ID descending.
+   * Get all academic years ordered by ID descending.
    * @returns {Array<Object>}
    */
   getAll() {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM Financial_Years ORDER BY id DESC').all();
+    return db.prepare('SELECT * FROM Academic_Years ORDER BY id DESC').all();
   },
 
   /**
-   * Get a financial year by ID.
+   * Get an academic year by ID.
    * @param {number} id
    * @returns {Object|undefined}
    */
   getById(id) {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM Financial_Years WHERE id = ?').get(id);
+    return db.prepare('SELECT * FROM Academic_Years WHERE id = ?').get(id);
   },
 
   /**
-   * Get the currently active financial year.
+   * Get the currently active academic year.
    * @returns {Object|undefined}
    */
   getActive() {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM Financial_Years WHERE is_active = 1').get();
+    return db.prepare('SELECT * FROM Academic_Years WHERE is_active = 1').get();
   },
 
   /**
-   * Create a new financial year.
-   * @param {Object} data - { year_label, start_date, end_date, is_active }
+   * Create a new academic year.
+   * @param {Object} data - { year_label, start_year, is_active }
    * @returns {Object} The newly created row.
    */
   create(data) {
     const db = getDatabase();
-    const { year_label, start_date, end_date, is_active } = data;
+    const { year_label, start_year, is_active } = data;
+
+    if (!year_label) {
+      throw new Error('Year label is required.');
+    }
+    if (!start_year) {
+      throw new Error('Start year is required.');
+    }
 
     // If setting as active, deactivate all others first
     if (is_active) {
-      db.prepare('UPDATE Financial_Years SET is_active = 0').run();
+      db.prepare('UPDATE Academic_Years SET is_active = 0').run();
     }
 
     const result = db.prepare(`
-      INSERT INTO Financial_Years (year_label, start_date, end_date, is_active)
-      VALUES (?, ?, ?, ?)
-    `).run(year_label, start_date || null, end_date || null, is_active ? 1 : 0);
+      INSERT INTO Academic_Years (year_label, start_year, is_active)
+      VALUES (?, ?, ?)
+    `).run(year_label, Number.parseInt(start_year, 10), is_active ? 1 : 0);
 
     return this.getById(result.lastInsertRowid);
   },
 
   /**
-   * Update a financial year.
+   * Update an academic year.
    * @param {number} id
    * @param {Object} data - Fields to update.
    * @returns {Object} The updated row.
    */
   update(id, data) {
     const db = getDatabase();
-    const { year_label, start_date, end_date, is_active } = data;
+    const { year_label, start_year, is_active } = data;
 
     // If setting as active, deactivate all others first
     if (is_active) {
-      db.prepare('UPDATE Financial_Years SET is_active = 0').run();
+      db.prepare('UPDATE Academic_Years SET is_active = 0').run();
     }
 
     db.prepare(`
-      UPDATE Financial_Years
+      UPDATE Academic_Years
       SET year_label = COALESCE(?, year_label),
-          start_date = COALESCE(?, start_date),
-          end_date = COALESCE(?, end_date),
+          start_year = COALESCE(?, start_year),
           is_active = COALESCE(?, is_active)
       WHERE id = ?
-    `).run(year_label, start_date, end_date, is_active !== undefined ? (is_active ? 1 : 0) : null, id);
+    `).run(
+      year_label,
+      start_year !== undefined && start_year !== '' ? Number.parseInt(start_year, 10) : null,
+      is_active !== undefined ? (is_active ? 1 : 0) : null,
+      id,
+    );
 
     return this.getById(id);
   },
@@ -91,28 +102,28 @@ const FinancialYearModel = {
    */
   setActive(id) {
     const db = getDatabase();
-    db.prepare('UPDATE Financial_Years SET is_active = 0').run();
-    db.prepare('UPDATE Financial_Years SET is_active = 1 WHERE id = ?').run(id);
+    db.prepare('UPDATE Academic_Years SET is_active = 0').run();
+    db.prepare('UPDATE Academic_Years SET is_active = 1 WHERE id = ?').run(id);
     return this.getById(id);
   },
 
   /**
-   * Delete a financial year (only if no classes or students are linked).
+   * Delete an academic year (only if no enrollments are linked).
    * @param {number} id
    * @returns {{ success: boolean, message?: string }}
    */
   delete(id) {
     const db = getDatabase();
 
-    const classCount = db.prepare(
-      'SELECT COUNT(*) as count FROM Classes_Master WHERE year_id = ?'
+    const enrollmentCount = db.prepare(
+      'SELECT COUNT(*) as count FROM Student_Enrollments WHERE academic_year_id = ?'
     ).get(id);
 
-    if (classCount.count > 0) {
-      return { success: false, message: 'Cannot delete: classes are linked to this year.' };
+    if (enrollmentCount.count > 0) {
+      return { success: false, message: 'Cannot delete: enrollments are linked to this year.' };
     }
 
-    db.prepare('DELETE FROM Financial_Years WHERE id = ?').run(id);
+    db.prepare('DELETE FROM Academic_Years WHERE id = ?').run(id);
     return { success: true };
   },
 };

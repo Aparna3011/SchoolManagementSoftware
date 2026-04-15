@@ -9,7 +9,7 @@ const { app } = require('electron');
  * 
  * Registers IPC handlers for Student operations.
  * Includes photo handling (save to AppData).
- * Routes: student:getAll, student:getById, student:getNextSrNo,
+ * Routes: student:getAll, student:getById, student:generateUSIN,
  *         student:create, student:update, student:getStats, student:getRecent,
  *         student:savePhoto
  */
@@ -48,12 +48,12 @@ function registerStudentHandlers() {
     }
   });
 
-  ipcMain.handle('student:getNextSrNo', async () => {
+  ipcMain.handle('student:generateUSIN', async (_event, { academic_year_id, class_id }) => {
     try {
-      const srNo = StudentModel.getNextSrNo();
-      return { success: true, data: srNo };
+      const usin = StudentModel.generateUSIN(academic_year_id, class_id);
+      return { success: true, data: usin };
     } catch (error) {
-      console.error('[StudentController] getNextSrNo error:', error);
+      console.error('[StudentController] generateUSIN error:', error);
       return { success: false, error: error.message };
     }
   });

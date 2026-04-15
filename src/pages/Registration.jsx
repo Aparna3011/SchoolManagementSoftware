@@ -1,38 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Save, Camera, Upload, X, RotateCcw, UserPlus } from 'lucide-react';
+import { Save, Camera, Upload, X, UserPlus } from 'lucide-react';
 import Webcam from 'react-webcam';
-
+import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
 import { Input, Textarea } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
-import { PDFDownloadLink, pdf, BlobProvider } from '@react-pdf/renderer';
 import { Modal } from '../components/ui/Modal';
 import { RegistrationFormPDF } from '../components/pdf/RegistrationFormPDF';
 
-/**
- * Registration Page
- * 
- * Detailed admission form matching the paper form layout:
- * - Student info (Sr.No, Surname, Name, Father's Name, DOB)
- * - Class selection
- * - Religion, Caste, Address
- * - Father details (Name, Education, Occupation)
- * - Mother details (Name, Education, Occupation)
- * - Mother Tongue
- * - Emergency contacts
- * - Photo capture/upload
- */
-
 const INITIAL_FORM = {
-  sr_no: '',
   surname: '',
   student_name: '',
   father_first_name: '',
   dob: '',
   class_id: '',
-  agreed_fee: '',
+  section_id: '',
+  roll_number: '',
+  agreed_annual_fee: '',
   religion: '',
   caste: '',
   address: '',
@@ -47,20 +33,18 @@ const INITIAL_FORM = {
   emergency_contact_father: '',
 };
 
-
-
 export default function Registration() {
   const { execute, loading } = useDatabase();
 
   const [form, setForm] = useState({ ...INITIAL_FORM });
   const [classes, setClasses] = useState([]);
   const [activeYear, setActiveYear] = useState(null);
+  const [previewUSIN, setPreviewUSIN] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoPath, setPhotoPath] = useState('');
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
-
   const [companyProfile, setCompanyProfile] = useState(null);
 
   const webcamRef = useRef(null);
@@ -70,24 +54,34 @@ export default function Registration() {
     loadFormData();
   }, []);
 
+  useEffect(() => {
+    async function updateUSINPreview() {
+      if (!activeYear?.id || !form.class_id) {
+        setPreviewUSIN('');
+        return;
+      }
+      const usin = await execute(() =>
+        window.api.student.generateUSIN(activeYear.id, Number.parseInt(form.class_id, 10)),
+      );
+      if (usin) {
+        setPreviewUSIN(usin);
+      }
+    }
+
+    updateUSINPreview();
+  }, [activeYear?.id, form.class_id]);
+
   async function loadFormData() {
-    // Load active year
     const year = await execute(() => window.api.financialYear.getActive());
     if (year) {
       setActiveYear(year);
-
-      // Load classes for this year
-      const classList = await execute(() => window.api.class.getAll(year.id));
-      if (classList) setClasses(classList);
     }
 
-    // Get next serial number
-    const nextSrNo = await execute(() => window.api.student.getNextSrNo());
-    if (nextSrNo) {
-      setForm((prev) => ({ ...prev, sr_no: nextSrNo }));
+    const classList = await execute(() => window.api.class.getAll());
+    if (classList) {
+      setClasses(classList);
     }
 
-    // Load company profile for PDF
     const profile = await execute(() => window.api.company.get());
     if (profile) {
       if (profile.logo_path) {
@@ -97,7 +91,6 @@ export default function Registration() {
         }
       }
       setCompanyProfile(profile);
-       console.log('company', profile)
     }
   }
 
@@ -107,26 +100,22 @@ export default function Registration() {
     setForm((prev) => {
       const updated = { ...prev, [name]: value };
 
-      // Auto-fill agreed fee when class changes
       if (name === 'class_id') {
-        const selectedClass = classes.find(c => c.id.toString() === value);
+        const selectedClass = classes.find((c) => c.id.toString() === value);
         if (selectedClass) {
-          updated.agreed_fee = selectedClass.base_fee || '';
+          updated.agreed_annual_fee = selectedClass.base_fee || '';
         } else {
-          updated.agreed_fee = '';
+          updated.agreed_annual_fee = '';
         }
       }
 
       return updated;
     });
 
-    // Clear error on change
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   }
-
-  // ---- Photo Handling ----
 
   function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -137,9 +126,8 @@ export default function Registration() {
       const base64 = reader.result;
       setPhotoPreview(base64);
 
-      // Save to AppData
       const savedPath = await execute(() =>
-        window.api.student.savePhoto(base64, file.name)
+        window.api.student.savePhoto(base64, file.name),
       );
       if (savedPath) setPhotoPath(savedPath);
     };
@@ -155,9 +143,8 @@ export default function Registration() {
     setPhotoPreview(imageSrc);
     setWebcamOpen(false);
 
-    // Save to AppData
     const savedPath = await execute(() =>
-      window.api.student.savePhoto(imageSrc, 'webcam_capture.jpg')
+      window.api.student.savePhoto(imageSrc, 'webcam_capture.jpg'),
     );
     if (savedPath) setPhotoPath(savedPath);
   }, [webcamRef, execute]);
@@ -167,20 +154,22 @@ export default function Registration() {
     setPhotoPath('');
   }
 
-  // ---- Form Validation ----
-
   function validateForm() {
     const newErrors = {};
 
     if (!form.student_name.trim()) {
       newErrors.student_name = 'Student name is required.';
     }
+    if (!activeYear?.id) {
+      newErrors.year = 'Active academic year is required.';
+    }
+    if (!form.class_id) {
+      newErrors.class_id = 'Class is required.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
-
-  // ---- Form Submit ----
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -188,32 +177,32 @@ export default function Registration() {
 
     const payload = {
       ...form,
-      class_id: form.class_id ? parseInt(form.class_id, 10) : null,
-      agreed_fee: form.agreed_fee ? parseFloat(form.agreed_fee) : 0,
+      class_id: Number.parseInt(form.class_id, 10),
+      section_id: form.section_id ? Number.parseInt(form.section_id, 10) : null,
+      roll_number: form.roll_number ? Number.parseInt(form.roll_number, 10) : null,
+      agreed_annual_fee: form.agreed_annual_fee ? Number.parseFloat(form.agreed_annual_fee) : 0,
       photo_path: photoPath,
-      year_id: activeYear?.id || null,
+      academic_year_id: activeYear.id,
     };
 
     const created = await execute(() => window.api.student.create(payload));
 
     if (created) {
-      setSuccessMessage(`Student "${created.student_name}" registered successfully! (Sr. No: ${created.sr_no})`);
+      setSuccessMessage(`Student \"${created.student_name}\" registered successfully! (USIN: ${created.usin})`);
 
       try {
         const blob = await pdf(
           <RegistrationFormPDF
             company={companyProfile}
-            student={created}
+            student={{ ...created, father_first_name: form.father_first_name }}
             localPhotoUrl={photoPreview}
-          />
+          />,
         ).toBlob();
-
-       
 
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Admission_${created.sr_no}_${created.student_name}.pdf`;
+        link.download = `Admission_${created.usin}_${created.student_name}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -222,38 +211,19 @@ export default function Registration() {
         console.error('Failed to generate PDF automatically:', err);
       }
 
-      // Reset form
       setForm({ ...INITIAL_FORM });
+      setPreviewUSIN('');
       setPhotoPreview(null);
       setPhotoPath('');
       setErrors({});
-
-      // Reload next sr_no
-      const nextSrNo = await execute(() => window.api.student.getNextSrNo());
-      if (nextSrNo) {
-        setForm((prev) => ({ ...prev, sr_no: nextSrNo }));
-      }
-
       setTimeout(() => setSuccessMessage(''), 5000);
     }
   }
 
-  // ---- Class options ----
   const classOptions = classes.map((c) => ({
     value: c.id.toString(),
-    label: `${c.class_name}${c.session_time ? ` (${c.session_time})` : ''}`,
+    label: `${c.class_name} (${c.short_code})`,
   }));
-
-  const isDevMode = import.meta.env.MODE === 'development';
-
-const selectedClass = classes.find((c) => c.id.toString() === form.class_id);
-
-const livePreviewStudent = {
-  ...form,
-  class_name: selectedClass?.class_name || '',
-  year_label: activeYear?.year_label || '',
-  admission_date: new Date().toISOString(),
-};
 
   return (
     <div>
@@ -262,7 +232,7 @@ const livePreviewStudent = {
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">Student Registration</h1>
           <p className="text-base text-slate-500 mt-1">
             Admission Form
-            {activeYear && <span> — Financial Year: {activeYear.year_label}</span>}
+            {activeYear && <span> - Academic Year: {activeYear.year_label}</span>}
           </p>
         </div>
         <div>
@@ -271,12 +241,11 @@ const livePreviewStudent = {
             fileName="empty_admission_form.pdf"
             className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 transition-colors"
           >
-            {({ loading }) => (loading ? 'Preparing PDF...' : 'Print Empty Form')}
+            {({ loading: preparing }) => (preparing ? 'Preparing PDF...' : 'Print Empty Form')}
           </PDFDownloadLink>
         </div>
       </div>
 
-      {/* Success Alert */}
       {successMessage && (
         <div className="flex items-center gap-2 p-4 mb-6 text-emerald-800 bg-emerald-100 border border-emerald-200 rounded-lg">
           <UserPlus size={18} />
@@ -284,26 +253,29 @@ const livePreviewStudent = {
         </div>
       )}
 
+      {errors.year && (
+        <div className="p-3 mb-4 text-amber-800 bg-amber-100 border border-amber-200 rounded-md text-sm">
+          {errors.year}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-3 gap-6">
-          {/* Left: Main Form (2 columns) */}
           <div style={{ gridColumn: 'span 2' }} className="flex flex-col gap-6">
-
-            {/* Section 1: Student Information */}
             <Card>
               <CardHeader>
                 <CardTitle>Student Information</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className="flex flex-col gap-4">
-                  {/* Row 1: Sr.No */}
                   <div className="grid grid-cols-4 gap-4">
                     <Input
-                      label="Sr. No"
-                      name="sr_no"
-                      value={form.sr_no}
-                      onChange={handleChange}
+                      label="USIN"
+                      name="usin"
+                      value={previewUSIN}
+                      onChange={() => {}}
                       hint="Auto-generated"
+                      disabled
                     />
                     <div className="col-span-3">
                       <div className="grid grid-cols-3 gap-4">
@@ -334,7 +306,6 @@ const livePreviewStudent = {
                     </div>
                   </div>
 
-                  {/* Row 2: DOB, Class, Fees */}
                   <div className="grid grid-cols-3 gap-4">
                     <Input
                       label="Date of Birth"
@@ -352,16 +323,15 @@ const livePreviewStudent = {
                       placeholder="Select class..."
                     />
                     <Input
-                      label="Agreed Fees"
-                      name="agreed_fee"
+                      label="Agreed Annual Fee"
+                      name="agreed_annual_fee"
                       type="number"
-                      value={form.agreed_fee}
+                      value={form.agreed_annual_fee}
                       onChange={handleChange}
                       placeholder="e.g. 5000"
                     />
                   </div>
 
-                  {/* Row 2.5: Religion & Caste */}
                   <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Religion"
@@ -379,7 +349,6 @@ const livePreviewStudent = {
                     />
                   </div>
 
-                  {/* Row 3: Address */}
                   <Textarea
                     label="Residential Address"
                     name="address"
@@ -392,7 +361,6 @@ const livePreviewStudent = {
               </CardBody>
             </Card>
 
-            {/* Section 2: Father's Details */}
             <Card>
               <CardHeader>
                 <CardTitle>Father's Details</CardTitle>
@@ -426,7 +394,6 @@ const livePreviewStudent = {
               </CardBody>
             </Card>
 
-            {/* Section 3: Mother's Details */}
             <Card>
               <CardHeader>
                 <CardTitle>Mother's Details</CardTitle>
@@ -460,7 +427,6 @@ const livePreviewStudent = {
               </CardBody>
             </Card>
 
-            {/* Section 4: Additional Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Additional Information</CardTitle>
@@ -476,14 +442,14 @@ const livePreviewStudent = {
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <Input
-                      label="Emergency Contact — Mother"
+                      label="Emergency Contact - Mother"
                       name="emergency_contact_mother"
                       value={form.emergency_contact_mother}
                       onChange={handleChange}
                       placeholder="Mother's mobile number"
                     />
                     <Input
-                      label="Emergency Contact — Father"
+                      label="Emergency Contact - Father"
                       name="emergency_contact_father"
                       value={form.emergency_contact_father}
                       onChange={handleChange}
@@ -501,7 +467,6 @@ const livePreviewStudent = {
             </Card>
           </div>
 
-          {/* Right: Photo Upload (1 column) */}
           <div>
             <Card>
               <CardHeader>
@@ -509,8 +474,7 @@ const livePreviewStudent = {
               </CardHeader>
               <CardBody>
                 <div className="flex flex-col items-center gap-4">
-                  {/* Preview */}
-                  <div className="w-full aspect-[3/4] max-w-[200px] border-2 border-dashed border-slate-300 rounded-lg overflow-hidden flex flex-col items-center justify-center bg-slate-50 relative">
+                  <div className="w-full aspect-3/4 max-w-50 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden flex flex-col items-center justify-center bg-slate-50 relative">
                     {photoPreview ? (
                       <img src={photoPreview} alt="Student photo" className="w-full h-full object-cover" />
                     ) : (
@@ -521,7 +485,6 @@ const livePreviewStudent = {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-2 justify-center w-full">
                     <label className="inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
                       <Upload size={14} />
@@ -556,16 +519,15 @@ const livePreviewStudent = {
               </CardBody>
             </Card>
 
-            {/* Info Card */}
             <Card className="mt-4">
               <CardBody>
                 <div className="text-sm text-secondary">
                   <p className="font-semibold mb-2">Admission Form Info</p>
                   <ul className="pl-4 list-disc space-y-1 mt-2 text-slate-600">
-                    <li>Sr. No is auto-generated</li>
-                    <li>Only Student Name is required</li>
+                    <li>USIN is auto-generated by year and class code</li>
+                    <li>Student Name and Class are required</li>
                     <li>Photo can be added later</li>
-                    <li>Agreed Fee is auto-filled by Class but can be edited</li>
+                    <li>Agreed Annual Fee is auto-filled by Class but can be edited</li>
                   </ul>
                 </div>
               </CardBody>
@@ -574,7 +536,6 @@ const livePreviewStudent = {
         </div>
       </form>
 
-      {/* Webcam Modal */}
       <Modal
         isOpen={webcamOpen}
         onClose={() => setWebcamOpen(false)}
@@ -604,43 +565,6 @@ const livePreviewStudent = {
           />
         </div>
       </Modal>
-      {isDevMode && (
-  <Card className="mt-6">
-    <CardHeader>
-      <CardTitle>Live Admission Preview (Development Only)</CardTitle>
-    </CardHeader>
-    <CardBody>
-      <div className="text-xs text-slate-500 mb-3">
-        This preview updates as you type above.
-      </div>
-
-      <BlobProvider
-        document={
-          <RegistrationFormPDF
-            company={companyProfile}
-            student={livePreviewStudent}
-            localPhotoUrl={photoPreview}
-          />
-        }
-      >
-        {({ url, loading, error }) => {
-          if (loading) return <div className="text-sm text-slate-500">Rendering preview...</div>;
-          if (error) return <div className="text-sm text-red-600">Preview failed to render.</div>;
-          if (!url) return null;
-
-          return (
-            <iframe
-              title="Registration PDF Preview"
-              src={url}
-              className="w-full border border-slate-200 rounded-md"
-              style={{ height: '900px' }}
-            />
-          );
-        }}
-      </BlobProvider>
-    </CardBody>
-  </Card>
-)}
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, IndianRupee, FileText, XCircle, AlertCircle } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
-import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
+import { Card, CardHeader, CardTitle, CardBody } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
@@ -11,34 +11,23 @@ import { Table } from '../components/ui/Table';
 import { Modal } from '../components/ui/Modal';
 import { FeesReceiptPDF } from '../components/pdf/FeesReceiptPDF';
 
-/**
- * Fees Page
- * 
- * Search student → View Ledger → Accept Payment → View History
- */
-
 export default function Fees() {
   const { execute, loading } = useDatabase();
 
-  // Search
   const [searchTerm, setSearchTerm] = useState('');
   const [students, setStudents] = useState([]);
   const [searched, setSearched] = useState(false);
 
-  // Selected student
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [ledger, setLedger] = useState(null);
   const [companyProfile, setCompanyProfile] = useState(null);
 
-  // Payment modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount_paid: '',
     payment_mode: 'Cash',
   });
-  const [nextInvoiceNo, setNextInvoiceNo] = useState('');
-
-  // ============ SEARCH ============
+  const [nextReceiptNo, setNextReceiptNo] = useState('');
 
   async function handleSearch(e) {
     e?.preventDefault();
@@ -46,92 +35,70 @@ export default function Fees() {
     if (!searchTerm.trim()) return;
 
     const results = await execute(() =>
-      window.api.student.getAll({ search: searchTerm })
+      window.api.student.getAll({ search: searchTerm }),
     );
 
     if (results) {
-      setStudents(results);
+      setStudents(results.filter((s) => s.enrollment_id));
     }
     setSearched(true);
     setSelectedStudent(null);
     setLedger(null);
 
-    // Load company profile for receipt PDFs if not already loaded
     if (!companyProfile) {
       const profile = await execute(() => window.api.company.get());
       if (profile) setCompanyProfile(profile);
     }
   }
 
-  // ============ SELECT STUDENT ============
-
   async function selectStudent(student) {
     setSelectedStudent(student);
-    await loadLedger(student.id);
+    await loadLedger(student.enrollment_id);
   }
 
-  async function loadLedger(studentId) {
-    const data = await execute(() => window.api.payment.getLedger(studentId));
+  async function loadLedger(enrollmentId) {
+    if (!enrollmentId) return;
+    const data = await execute(() => window.api.payment.getLedger(enrollmentId));
     if (data) setLedger(data);
   }
 
-  // ============ PAYMENT ============
-
   async function openPaymentModal() {
-    const invoiceNo = await execute(() => window.api.payment.generateInvoiceNo());
-    if (invoiceNo) setNextInvoiceNo(invoiceNo);
+    if (!selectedStudent?.enrollment_id) return;
+
+    const receiptNo = await execute(() => window.api.payment.generateReceiptNo());
+    if (receiptNo) setNextReceiptNo(receiptNo);
 
     setPaymentForm({ amount_paid: '', payment_mode: 'Cash' });
     setPaymentModalOpen(true);
   }
 
   async function handlePayment() {
-    if (!paymentForm.amount_paid || !selectedStudent) return;
+    if (!paymentForm.amount_paid || !selectedStudent?.enrollment_id) return;
 
     const amount = parseFloat(paymentForm.amount_paid);
     if (isNaN(amount) || amount <= 0) return;
 
-    const balanceAfter = (ledger?.balance || 0) - amount;
-
     await execute(() =>
       window.api.payment.create({
-        student_id: selectedStudent.id,
+        enrollment_id: selectedStudent.enrollment_id,
         amount_paid: amount,
         payment_mode: paymentForm.payment_mode,
-        balance_remaining: Math.max(0, balanceAfter),
-      })
+      }),
     );
 
     setPaymentModalOpen(false);
-    await loadLedger(selectedStudent.id);
+    await loadLedger(selectedStudent.enrollment_id);
   }
-
-  // ============ CANCEL PAYMENT ============
 
   async function handleCancelPayment(paymentId) {
-    if (!confirm('Are you sure you want to cancel this invoice? This action cannot be undone.')) return;
+    if (!confirm('Are you sure you want to cancel this receipt? This action cannot be undone.')) return;
 
     await execute(() => window.api.payment.cancel(paymentId));
-    await loadLedger(selectedStudent.id);
+    await loadLedger(selectedStudent.enrollment_id);
   }
 
-  // ---- Column defs ----
-
-  const studentColumns = [
-    { key: 'sr_no', label: 'Sr. No', width: '80px' },
-    {
-      key: 'student_name',
-      label: 'Student Name',
-      render: (val, row) => (
-        <span className="font-medium">{row.surname ? `${row.surname} ${val}` : val}</span>
-      ),
-    },
-    { key: 'class_name', label: 'Class' },
-    { key: 'father_name', label: "Father's Name", render: (v) => v || '-' },
-  ];
-
   const paymentColumns = [
-    { key: 'invoice_no', label: 'Invoice No.' },
+    { key: 'receipt_no', label: 'Receipt No.' },
     {
       key: 'amount_paid',
       label: 'Amount',
@@ -140,7 +107,7 @@ export default function Fees() {
     {
       key: 'payment_date',
       label: 'Date',
-      render: (v) => v ? new Date(v).toLocaleDateString('en-IN') : '-',
+      render: (v) => (v ? new Date(v).toLocaleDateString('en-IN') : '-'),
     },
     { key: 'payment_mode', label: 'Mode' },
     {
@@ -159,14 +126,14 @@ export default function Fees() {
         row.status === 'Active' ? (
           <div className="flex gap-2 justify-end">
             <PDFDownloadLink
-              document={<FeesReceiptPDF payment={row} student={selectedStudent} company={companyProfile} />}
-              fileName={`receipt_${row.invoice_no?.replace(/\//g, '_')}.pdf`}
+              document={<FeesReceiptPDF payment={row} student={selectedStudent} company={companyProfile} ledger={ledger} />}
+              fileName={`receipt_${row.receipt_no?.replace(/\//g, '_')}.pdf`}
               className="inline-flex items-center justify-center p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
               title="Print Receipt"
             >
-              {({ loading }) => (loading ? <AlertCircle size={14} className="animate-spin" /> : <FileText size={14} />)}
+              {({ loading: preparing }) => (preparing ? <AlertCircle size={14} className="animate-spin" /> : <FileText size={14} />)}
             </PDFDownloadLink>
-            <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Invoice">
+            <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Receipt">
               <XCircle size={14} />
             </Button>
           </div>
@@ -183,13 +150,11 @@ export default function Fees() {
 
   return (
     <div>
-      {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 leading-tight">Fees Management</h1>
         <p className="text-base text-slate-500 mt-1">Search students, view ledgers, and record payments</p>
       </div>
 
-      {/* Search Bar */}
       <Card className="mb-6">
         <CardBody>
           <form onSubmit={handleSearch} className="flex gap-3 items-end">
@@ -199,7 +164,7 @@ export default function Fees() {
                 name="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, Sr. No, or father's name..."
+                placeholder="Search by name, USIN, or father's name..."
               />
             </div>
             <Button type="submit" variant="primary" disabled={loading}>
@@ -210,7 +175,6 @@ export default function Fees() {
       </Card>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Left: Search Results */}
         <div>
           <Card>
             <CardHeader>
@@ -243,7 +207,7 @@ export default function Fees() {
                           {s.surname ? `${s.surname} ${s.student_name}` : s.student_name}
                         </div>
                         <div className="text-xs text-muted">
-                          Sr. {s.sr_no} • {s.class_name || 'No class'}
+                          {s.usin} • {s.class_name || 'No class'}
                         </div>
                       </div>
                     </div>
@@ -254,7 +218,6 @@ export default function Fees() {
           </Card>
         </div>
 
-        {/* Right: Ledger + Payments */}
         <div style={{ gridColumn: 'span 2' }}>
           {!selectedStudent ? (
             <Card>
@@ -270,10 +233,9 @@ export default function Fees() {
             </Card>
           ) : (
             <div className="flex flex-col gap-6 animate-fade-in">
-              {/* Ledger Summary */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-50 text-indigo-600">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600">
                     <IndianRupee size={24} />
                   </div>
                   <div className="flex-1">
@@ -284,7 +246,7 @@ export default function Fees() {
                   </div>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50 text-emerald-600">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
                     <IndianRupee size={24} />
                   </div>
                   <div className="flex-1">
@@ -295,7 +257,7 @@ export default function Fees() {
                   </div>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-50 text-red-600">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-red-50 text-red-600">
                     <AlertCircle size={24} />
                   </div>
                   <div className="flex-1">
@@ -307,11 +269,10 @@ export default function Fees() {
                 </div>
               </div>
 
-              {/* Payment History */}
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Payment History — {selectedStudent.surname} {selectedStudent.student_name}
+                    Payment History - {selectedStudent.surname} {selectedStudent.student_name}
                   </CardTitle>
                   <Button variant="success" size="sm" onClick={openPaymentModal}>
                     <IndianRupee size={14} /> Accept Payment
@@ -330,7 +291,6 @@ export default function Fees() {
         </div>
       </div>
 
-      {/* Payment Modal */}
       <Modal
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
@@ -345,19 +305,20 @@ export default function Fees() {
         }
       >
         <div className="flex flex-col gap-4">
-          {/* Invoice info */}
           <div className="flex p-4 mb-4 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg gap-3">
-            <FileText size={18} className="flex-shrink-0 mt-0.5" />
+            <FileText size={18} className="shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold mb-1">Invoice: {nextInvoiceNo}</div>
+              <div className="font-semibold mb-1">Receipt: {nextReceiptNo}</div>
               <div className="text-xs text-amber-700/80">Auto-generated. Cannot be changed.</div>
             </div>
           </div>
 
-          {/* Student info */}
           <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-md">
             <div className="font-medium text-sm">
               {selectedStudent?.surname} {selectedStudent?.student_name}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">
+              USIN: {selectedStudent?.usin}
             </div>
             <div className="text-xs text-slate-500 mt-1">
               Balance: ₹{(ledger?.balance || 0).toLocaleString('en-IN')}

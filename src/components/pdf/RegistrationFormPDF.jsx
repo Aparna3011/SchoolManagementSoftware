@@ -52,10 +52,11 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
         {/* Header */}
         <View style={styles.headerContainer}>
           <View style={{ flex: 1 }}>
-            {/* <Text style={{ fontSize: 9, fontWeight: 'bold' }}>Reg. No: {company?.reg_no || 'Mah./13402/1-4-1998'}</Text> */}
             <Text style={styles.companyName}>{company?.firm_name || 'RAINBOW PLAY SCHOOL'}</Text>
             <Text style={styles.addressText}>{company?.address || '2118, D, Janwadkar\'s Complex, Shukrawar Peth, Kolhapur - 416 002'}</Text>
             <Text style={styles.addressText}>Mob: {company?.phone || '9653104744'}</Text>
+            {!!company?.website && <Text style={styles.addressText}>Website: {company.website}</Text>}
+            {!!company?.reg_no && <Text style={styles.addressText}>Reg. No: {company.reg_no}</Text>}
           </View>
           {company?.logo_base64 && <Image src={company.logo_base64} style={styles.logo} />}
         </View>
@@ -66,8 +67,8 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
         <View style={styles.metaContainer}>
           <View style={styles.metaColumn}>
             <View style={styles.row}>
-              <Text style={styles.label}>Sr. No:</Text>
-              <Text style={styles.value}>{getVal(student?.sr_no)}</Text>
+              <Text style={styles.label}>USIN:</Text>
+              <Text style={styles.value}>{getVal(student?.usin)}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Date of Admission:</Text>

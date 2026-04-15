@@ -1,203 +1,375 @@
 const { getDatabase } = require('../database/connection');
+const { generateUSIN } = require('../database/utils/usin');
 
-/**
- * Student Model
- * 
- * Data access layer for the Students table.
- * Matches all fields from the paper admission form.
- */
+function getTargetYearId(db, requestedYearId) {
+  if (requestedYearId) {
+    return Number.parseInt(requestedYearId, 10);
+  }
+  const active = db.prepare('SELECT id FROM Academic_Years WHERE is_active = 1').get();
+  return active?.id || null;
+}
 
 const StudentModel = {
-  /**
-   * Get all students with optional filters.
-   * @param {Object} [filters] - { search, class_id, year_id, is_active }
-   * @returns {Array<Object>}
-   */
   getAll(filters = {}) {
     const db = getDatabase();
+    const yearId = getTargetYearId(db, filters.year_id);
+
     let query = `
-      SELECT s.*, cm.class_name, cm.base_fee, fy.year_label
-      FROM Students s
-      LEFT JOIN Classes_Master cm ON s.class_id = cm.id
-      LEFT JOIN Financial_Years fy ON s.year_id = fy.id
+      SELECT
+        sm.*,
+        sm.residential_address AS address,
+        se.id AS enrollment_id,
+        se.academic_year_id,
+        se.class_id,
+        se.section_id,
+        se.roll_number,
+        se.agreed_annual_fee,
+        cm.class_name,
+        cm.short_code,
+        ay.year_label
+      FROM Students_Master sm
+      LEFT JOIN Student_Enrollments se ON se.id = (
+        SELECT se2.id
+        FROM Student_Enrollments se2
+        WHERE se2.student_id = sm.id
+        ${yearId ? 'AND se2.academic_year_id = ?' : ''}
+        ORDER BY se2.id DESC
+        LIMIT 1
+      )
+      LEFT JOIN Classes_Master cm ON se.class_id = cm.id
+      LEFT JOIN Academic_Years ay ON se.academic_year_id = ay.id
       WHERE 1=1
     `;
+
     const params = [];
+    if (yearId) {
+      params.push(yearId);
+    }
 
     if (filters.search) {
-      query += ` AND (s.student_name LIKE ? OR s.sr_no LIKE ? OR s.father_name LIKE ?)`;
       const searchTerm = `%${filters.search}%`;
+      query += ' AND (sm.student_name LIKE ? OR sm.usin LIKE ? OR sm.father_name LIKE ?)';
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (filters.class_id) {
-      query += ` AND s.class_id = ?`;
-      params.push(filters.class_id);
+      query += ' AND se.class_id = ?';
+      params.push(Number.parseInt(filters.class_id, 10));
     }
 
-    if (filters.year_id) {
-      query += ` AND s.year_id = ?`;
-      params.push(filters.year_id);
+    if (filters.status) {
+      query += ' AND sm.status = ?';
+      params.push(filters.status);
     }
 
-    if (filters.is_active !== undefined) {
-      query += ` AND s.is_active = ?`;
-      params.push(filters.is_active ? 1 : 0);
-    }
-
-    query += ` ORDER BY s.id DESC`;
+    query += ' ORDER BY sm.id DESC';
 
     return db.prepare(query).all(...params);
   },
 
-  /**
-   * Get a student by ID with joined class info.
-   * @param {number} id
-   * @returns {Object|undefined}
-   */
-  getById(id) {
+  getById(id, options = {}) {
     const db = getDatabase();
+    const yearId = getTargetYearId(db, options.year_id);
+
+    if (yearId) {
+      return db.prepare(`
+      SELECT
+        sm.*,
+        sm.residential_address AS address,
+        se.id AS enrollment_id,
+        se.academic_year_id,
+        se.class_id,
+        se.section_id,
+        se.roll_number,
+        se.agreed_annual_fee,
+        cm.class_name,
+        cm.short_code,
+        ay.year_label
+      FROM Students_Master sm
+      LEFT JOIN Student_Enrollments se ON se.id = (
+        SELECT se2.id
+        FROM Student_Enrollments se2
+        WHERE se2.student_id = sm.id AND se2.academic_year_id = ?
+        ORDER BY se2.id DESC
+        LIMIT 1
+      )
+      LEFT JOIN Classes_Master cm ON se.class_id = cm.id
+      LEFT JOIN Academic_Years ay ON se.academic_year_id = ay.id
+      WHERE sm.id = ?
+    `).get(yearId, id);
+    }
+
     return db.prepare(`
-      SELECT s.*, cm.class_name, cm.base_fee, fy.year_label
-      FROM Students s
-      LEFT JOIN Classes_Master cm ON s.class_id = cm.id
-      LEFT JOIN Financial_Years fy ON s.year_id = fy.id
-      WHERE s.id = ?
+      SELECT
+        sm.*,
+        sm.residential_address AS address,
+        se.id AS enrollment_id,
+        se.academic_year_id,
+        se.class_id,
+        se.section_id,
+        se.roll_number,
+        se.agreed_annual_fee,
+        cm.class_name,
+        cm.short_code,
+        ay.year_label
+      FROM Students_Master sm
+      LEFT JOIN Student_Enrollments se ON se.id = (
+        SELECT se2.id
+        FROM Student_Enrollments se2
+        WHERE se2.student_id = sm.id
+        ORDER BY se2.id DESC
+        LIMIT 1
+      )
+      LEFT JOIN Classes_Master cm ON se.class_id = cm.id
+      LEFT JOIN Academic_Years ay ON se.academic_year_id = ay.id
+      WHERE sm.id = ?
     `).get(id);
   },
 
-  /**
-   * Generate the next serial number.
-   * @returns {string} e.g., "075"
-   */
-  getNextSrNo() {
+  generateUSIN(academicYearId, classId) {
     const db = getDatabase();
-    const last = db.prepare(
-      'SELECT sr_no FROM Students ORDER BY id DESC LIMIT 1'
-    ).get();
-
-    if (!last || !last.sr_no) return '001';
-
-    const nextNum = parseInt(last.sr_no, 10) + 1;
-    return String(nextNum).padStart(3, '0');
+    return generateUSIN(db, academicYearId, classId);
   },
 
-  /**
-   * Create a new student record.
-   * @param {Object} data - All student fields.
-   * @returns {Object} The newly created student.
-   */
   create(data) {
     const db = getDatabase();
     const {
-      sr_no, photo_path, surname, student_name, father_first_name,
-      dob, class_id, religion, caste, address,
-      father_name, father_education, father_occupation,
-      mother_name, mother_education, mother_occupation,
-      mother_tongue, emergency_contact_mother, emergency_contact_father,
-      year_id, agreed_fee,
+      photo_path,
+      surname,
+      student_name,
+      dob,
+      gender,
+      religion,
+      caste,
+      blood_group,
+      mother_tongue,
+      address,
+      father_first_name,
+      father_name,
+      father_education,
+      father_occupation,
+      emergency_contact_father,
+      mother_name,
+      mother_education,
+      mother_occupation,
+      emergency_contact_mother,
+      status,
+      academic_year_id,
+      class_id,
+      section_id,
+      roll_number,
+      agreed_annual_fee,
     } = data;
 
-    const result = db.prepare(`
-      INSERT INTO Students (
-        sr_no, photo_path, surname, student_name, father_first_name,
-        dob, class_id, religion, caste, address,
-        father_name, father_education, father_occupation,
-        mother_name, mother_education, mother_occupation,
-        mother_tongue, emergency_contact_mother, emergency_contact_father,
-        year_id, agreed_fee
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      sr_no || this.getNextSrNo(),
-      photo_path || '',
-      surname || '',
-      student_name,
-      father_first_name || '',
-      dob || null,
-      class_id || null,
-      religion || '',
-      caste || '',
-      address || '',
-      father_name || '',
-      father_education || '',
-      father_occupation || '',
-      mother_name || '',
-      mother_education || '',
-      mother_occupation || '',
-      mother_tongue || '',
-      emergency_contact_mother || '',
-      emergency_contact_father || '',
-      year_id || null,
-      agreed_fee || 0,
-    );
+    if (!student_name?.trim()) {
+      throw new Error('Student name is required.');
+    }
+    if (!academic_year_id) {
+      throw new Error('Academic year is required.');
+    }
+    if (!class_id) {
+      throw new Error('Class is required.');
+    }
 
-    return this.getById(result.lastInsertRowid);
+    const insertMaster = db.prepare(`
+      INSERT INTO Students_Master (
+        usin,
+        admission_date,
+        photo_path,
+        surname,
+        student_name,
+        dob,
+        gender,
+        religion,
+        caste,
+        blood_group,
+        mother_tongue,
+        residential_address,
+        father_name,
+        father_education,
+        father_occupation,
+        emergency_contact_father,
+        mother_name,
+        mother_education,
+        mother_occupation,
+        emergency_contact_mother,
+        status
+      ) VALUES (?, CURRENT_DATE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertEnrollment = db.prepare(`
+      INSERT INTO Student_Enrollments (
+        student_id,
+        academic_year_id,
+        class_id,
+        section_id,
+        roll_number,
+        agreed_annual_fee
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const run = db.transaction(() => {
+      const usin = generateUSIN(
+        db,
+        Number.parseInt(academic_year_id, 10),
+        Number.parseInt(class_id, 10),
+      );
+
+      const parentName = father_name || father_first_name || '';
+
+      const masterResult = insertMaster.run(
+        usin,
+        photo_path || '',
+        surname || '',
+        student_name.trim(),
+        dob || null,
+        gender || '',
+        religion || '',
+        caste || '',
+        blood_group || '',
+        mother_tongue || '',
+        address || '',
+        parentName,
+        father_education || '',
+        father_occupation || '',
+        emergency_contact_father || '',
+        mother_name || '',
+        mother_education || '',
+        mother_occupation || '',
+        emergency_contact_mother || '',
+        status || 'Active',
+      );
+
+      insertEnrollment.run(
+        masterResult.lastInsertRowid,
+        Number.parseInt(academic_year_id, 10),
+        Number.parseInt(class_id, 10),
+        section_id ? Number.parseInt(section_id, 10) : null,
+        roll_number ? Number.parseInt(roll_number, 10) : null,
+        agreed_annual_fee ? Number.parseFloat(agreed_annual_fee) : 0,
+      );
+
+      return masterResult.lastInsertRowid;
+    });
+
+    const studentId = run();
+    return this.getById(studentId, { year_id: academic_year_id });
   },
 
-  /**
-   * Update a student record.
-   * @param {number} id
-   * @param {Object} data - Fields to update.
-   * @returns {Object} The updated student.
-   */
   update(id, data) {
     const db = getDatabase();
 
-    // Build dynamic update query from provided fields
-    const allowedFields = [
-      'sr_no', 'photo_path', 'surname', 'student_name', 'father_first_name',
-      'dob', 'class_id', 'religion', 'caste', 'address',
-      'father_name', 'father_education', 'father_occupation',
-      'mother_name', 'mother_education', 'mother_occupation',
-      'mother_tongue', 'emergency_contact_mother', 'emergency_contact_father',
-      'year_id', 'is_active', 'agreed_fee',
+    const masterFields = [
+      'photo_path',
+      'surname',
+      'student_name',
+      'dob',
+      'gender',
+      'religion',
+      'caste',
+      'blood_group',
+      'mother_tongue',
+      'father_name',
+      'father_education',
+      'father_occupation',
+      'emergency_contact_father',
+      'mother_name',
+      'mother_education',
+      'mother_occupation',
+      'emergency_contact_mother',
+      'status',
     ];
 
-    const setClauses = [];
-    const params = [];
-
-    for (const field of allowedFields) {
+    const masterSet = [];
+    const masterParams = [];
+    for (const field of masterFields) {
       if (data[field] !== undefined) {
-        setClauses.push(`${field} = ?`);
-        params.push(data[field]);
+        masterSet.push(`${field} = ?`);
+        masterParams.push(data[field]);
       }
     }
+    if (data.address !== undefined) {
+      masterSet.push('residential_address = ?');
+      masterParams.push(data.address);
+    }
 
-    if (setClauses.length === 0) return this.getById(id);
+    if (masterSet.length > 0) {
+      masterParams.push(id);
+      db.prepare(`UPDATE Students_Master SET ${masterSet.join(', ')} WHERE id = ?`).run(...masterParams);
+    }
 
-    setClauses.push('updated_at = CURRENT_TIMESTAMP');
-    params.push(id);
+    const enrollmentFields = {
+      academic_year_id: data.academic_year_id,
+      class_id: data.class_id,
+      section_id: data.section_id,
+      roll_number: data.roll_number,
+      agreed_annual_fee: data.agreed_annual_fee,
+    };
 
-    db.prepare(`
-      UPDATE Students SET ${setClauses.join(', ')} WHERE id = ?
-    `).run(...params);
+    const hasEnrollmentUpdate = Object.values(enrollmentFields).some((v) => v !== undefined);
 
-    return this.getById(id);
+    if (hasEnrollmentUpdate) {
+      const yearId = getTargetYearId(db, data.academic_year_id);
+      const enrollment = db.prepare(`
+        SELECT id
+        FROM Student_Enrollments
+        WHERE student_id = ? ${yearId ? 'AND academic_year_id = ?' : ''}
+        ORDER BY id DESC
+        LIMIT 1
+      `).get(...(yearId ? [id, yearId] : [id]));
+
+      if (!enrollment) {
+        throw new Error('Enrollment not found for the student.');
+      }
+
+      db.prepare(`
+        UPDATE Student_Enrollments
+        SET academic_year_id = COALESCE(?, academic_year_id),
+            class_id = COALESCE(?, class_id),
+            section_id = COALESCE(?, section_id),
+            roll_number = COALESCE(?, roll_number),
+            agreed_annual_fee = COALESCE(?, agreed_annual_fee)
+        WHERE id = ?
+      `).run(
+        enrollmentFields.academic_year_id ?? null,
+        enrollmentFields.class_id ?? null,
+        enrollmentFields.section_id ?? null,
+        enrollmentFields.roll_number ?? null,
+        enrollmentFields.agreed_annual_fee ?? null,
+        enrollment.id,
+      );
+    }
+
+    return this.getById(id, { year_id: data.academic_year_id });
   },
 
-  /**
-   * Get student count for dashboard stats.
-   * @returns {{ total: number, active: number }}
-   */
   getStats() {
     const db = getDatabase();
-    const total = db.prepare('SELECT COUNT(*) as count FROM Students').get();
-    const active = db.prepare('SELECT COUNT(*) as count FROM Students WHERE is_active = 1').get();
+    const total = db.prepare('SELECT COUNT(*) as count FROM Students_Master').get();
+    const active = db.prepare("SELECT COUNT(*) as count FROM Students_Master WHERE status = 'Active'").get();
     return { total: total.count, active: active.count };
   },
 
-  /**
-   * Get recent registrations for dashboard.
-   * @param {number} [limit=5]
-   * @returns {Array<Object>}
-   */
   getRecent(limit = 5) {
     const db = getDatabase();
     return db.prepare(`
-      SELECT s.id, s.sr_no, s.student_name, s.surname, s.admission_date, cm.class_name
-      FROM Students s
-      LEFT JOIN Classes_Master cm ON s.class_id = cm.id
-      ORDER BY s.id DESC
+      SELECT
+        sm.id,
+        sm.usin,
+        sm.student_name,
+        sm.surname,
+        sm.admission_date,
+        cm.class_name
+      FROM Students_Master sm
+      LEFT JOIN Student_Enrollments se ON se.id = (
+        SELECT se2.id
+        FROM Student_Enrollments se2
+        WHERE se2.student_id = sm.id
+        ORDER BY se2.id DESC
+        LIMIT 1
+      )
+      LEFT JOIN Classes_Master cm ON se.class_id = cm.id
+      ORDER BY sm.id DESC
       LIMIT ?
     `).all(limit);
   },

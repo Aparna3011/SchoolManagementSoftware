@@ -9,9 +9,9 @@ const { ipcMain } = require('electron');
  */
 
 function registerClassHandlers() {
-  ipcMain.handle('class:getAll', async (_event, yearId) => {
+  ipcMain.handle('class:getAll', async () => {
     try {
-      const classes = ClassModel.getAll(yearId);
+      const classes = ClassModel.getAll();
       return { success: true, data: classes };
     } catch (error) {
       console.error('[ClassController] getAll error:', error);
