@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Save, Camera, Upload, X, UserPlus } from 'lucide-react';
+import { Save, Camera, Upload, X, UserPlus, RefreshCw } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { pdf } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
@@ -48,6 +48,11 @@ export default function Registration() {
   const [actionLoading, setActionLoading] = useState('');
   const [emptyFormLoading, setEmptyFormLoading] = useState(false);
   const [companyProfile, setCompanyProfile] = useState(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewInitialized, setPreviewInitialized] = useState(false);
+
+  const isDevMode = import.meta.env.DEV;
 
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -55,6 +60,23 @@ export default function Registration() {
   useEffect(() => {
     loadFormData();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewPdfUrl) {
+        URL.revokeObjectURL(previewPdfUrl);
+      }
+    };
+  }, [previewPdfUrl]);
+
+  useEffect(() => {
+    if (!isDevMode || previewInitialized) return;
+
+    if (!companyProfile) return;
+
+    handleRefreshPreview();
+    setPreviewInitialized(true);
+  }, [isDevMode, previewInitialized, companyProfile]);
 
   useEffect(() => {
     async function updateUSINPreview() {
@@ -93,6 +115,7 @@ export default function Registration() {
         }
       }
       setCompanyProfile(profile);
+      console.log('company' , profile)
     }
   }
 
@@ -277,6 +300,39 @@ export default function Registration() {
     }
   }
 
+  async function handleRefreshPreview() {
+    try {
+      setPreviewLoading(true);
+
+      const selectedClass = classes.find((c) => c.id.toString() === form.class_id);
+      const previewStudent = {
+        ...form,
+        usin: previewUSIN,
+        class_name: selectedClass ? selectedClass.class_name : '',
+      };
+
+      const blob = await pdf(
+        <RegistrationFormPDF
+          company={companyProfile}
+          student={previewStudent}
+          localPhotoUrl={photoPreview}
+        />,
+      ).toBlob();
+
+      const nextUrl = URL.createObjectURL(blob);
+      setPreviewPdfUrl((prevUrl) => {
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl);
+        }
+        return nextUrl;
+      });
+    } catch (err) {
+      console.error('Failed to generate preview PDF:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   const classOptions = classes.map((c) => ({
     value: c.id.toString(),
     label: `${c.class_name} (${c.short_code})`,
@@ -292,7 +348,7 @@ export default function Registration() {
             {activeYear && <span> - Academic Year: {activeYear.year_label}</span>}
           </p>
         </div>
-        <div>
+        <div className='flex gap-10'>
           <Button
             type="button"
             variant="danger"
@@ -301,9 +357,10 @@ export default function Registration() {
           >
             Clear Form
           </Button>
+         
           <Button
             type="button"
-            variant="secondary"
+            variant="primary"
             disabled={emptyFormLoading}
             onClick={handleDownloadEmptyForm}
           >
@@ -659,6 +716,47 @@ export default function Registration() {
           />
         </div>
       </Modal>
+
+      {isDevMode && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Admission Form Preview (Development)</CardTitle>
+             {isDevMode && (
+            <Button
+              type="button"
+              variant="primary"
+              disabled={previewLoading}
+              onClick={handleRefreshPreview}
+            >
+              <RefreshCw size={14} />
+              {previewLoading ? 'Refreshing Preview...' : 'Refresh Preview'}
+            </Button>
+          )}
+          </CardHeader>
+          <CardBody>
+            
+            <div className="w-full h-[75vh]">
+              {previewLoading && (
+                <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  Refreshing PDF preview...
+                </div>
+              )}
+              {!previewLoading && previewPdfUrl && (
+                <iframe
+                  title="Registration PDF Preview"
+                  src={previewPdfUrl}
+                  className="w-full h-full border border-slate-200 rounded-md"
+                />
+              )}
+              {!previewLoading && !previewPdfUrl && (
+                <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  Preview could not be generated.
+                </div>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

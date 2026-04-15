@@ -23,7 +23,7 @@ function up(db) {
       school_code TEXT DEFAULT '', -- Used for USIN generation
       group_name TEXT DEFAULT '',
       firm_name TEXT NOT NULL DEFAULT '',
-      tagline TEXT DEFAULT '',
+      tagline TEXT DEFAULT '',   
       address TEXT DEFAULT '',
       phone TEXT DEFAULT '',
       email TEXT DEFAULT '',
@@ -39,7 +39,7 @@ function up(db) {
 
   db.exec(`
     INSERT OR IGNORE INTO Company_Profile (id, school_code, group_name, firm_name)
-    VALUES (1, 'SV', 'S V Group of Institutions', 'School');
+    VALUES (1, 'TEST', 'Group of Institutions', 'School');
   `);
 
   db.exec(`

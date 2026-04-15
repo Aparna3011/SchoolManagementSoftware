@@ -35,8 +35,8 @@ export default function CompanyProfile() {
     const profile = await execute(() => window.api.company.get());
     if (profile) {
       setForm({
-        school_code: profile.school_code || 'SV',
-        group_name: profile.group_name || 'S V Group of Institutions',
+        school_code: profile.school_code || '',
+        group_name: profile.group_name || '',
         firm_name: profile.firm_name || '',
         tagline: profile.tagline || '',
         address: profile.address || '',
@@ -111,14 +111,14 @@ export default function CompanyProfile() {
                     name="group_name"
                     value={form.group_name}
                     onChange={handleChange}
-                    placeholder="e.g., S V Group of Institutions"
+                    placeholder="e.g., Group of Institutions"
                   />
                   <Input
                     label="School Name"
                     name="firm_name"
                     value={form.firm_name}
                     onChange={handleChange}
-                    placeholder="e.g., Rainbow Play School"
+                    placeholder="e.g., school name"
                     required
                   />
                 </div>
