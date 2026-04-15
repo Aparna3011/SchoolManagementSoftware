@@ -150,6 +150,15 @@ function registerStudentHandlers() {
     let printWindow = null;
     let tempFilePath = null;
 
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const withTimeout = (promise, ms, timeoutMessage) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(timeoutMessage)), ms);
+        }),
+      ]);
+
     try {
       if (!base64Pdf) {
         throw new Error('No PDF data provided for printing.');
@@ -160,26 +169,54 @@ function registerStudentHandlers() {
       fs.writeFileSync(tempFilePath, Buffer.from(base64Pdf, 'base64'));
 
       printWindow = new BrowserWindow({
+        width: 1200,
+        height: 1600,
         show: false,
         webPreferences: {
-          sandbox: true,
+          plugins: true,
+          sandbox: false,
         },
       });
 
-      await printWindow.loadURL(pathToFileURL(tempFilePath).toString());
+      const fileUrl = pathToFileURL(tempFilePath).toString();
+      await withTimeout(
+        printWindow.loadURL(fileUrl),
+        8000,
+        'Timed out while loading PDF into print window.',
+      );
 
-      await new Promise((resolve, reject) => {
-        printWindow.webContents.print(
-          { silent: true, printBackground: true },
-          (success, failureReason) => {
-            if (!success) {
-              reject(new Error(failureReason || 'Failed to print PDF.'));
-              return;
-            }
-            resolve(true);
-          },
+      // Give Chromium PDF viewer time to fully rasterize the first page.
+      await wait(1800);
+
+      const printWithOptions = (silent) =>
+        withTimeout(
+          new Promise((resolve, reject) => {
+            printWindow.webContents.print(
+              { silent, printBackground: true },
+              (success, failureReason) => {
+                if (!success) {
+                  reject(new Error(failureReason || 'Failed to print PDF.'));
+                  return;
+                }
+                resolve(true);
+              },
+            );
+          }),
+          10000,
+          silent
+            ? 'Timed out while sending silent print job to default printer.'
+            : 'Timed out while opening print dialog.',
         );
-      });
+
+      try {
+        await printWithOptions(true);
+      } catch (silentError) {
+        console.warn('[StudentController] Silent print failed, opening print dialog fallback:', silentError.message);
+        if (!printWindow.isVisible()) {
+          printWindow.show();
+        }
+        await printWithOptions(false);
+      }
 
       return { success: true, data: true };
     } catch (error) {

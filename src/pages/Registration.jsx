@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, Camera, Upload, X, UserPlus } from 'lucide-react';
 import Webcam from 'react-webcam';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from '../components/ui/Card';
 import { Input, Textarea } from '../components/ui/Input';
@@ -46,6 +46,7 @@ export default function Registration() {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [actionLoading, setActionLoading] = useState('');
+  const [emptyFormLoading, setEmptyFormLoading] = useState(false);
   const [companyProfile, setCompanyProfile] = useState(null);
 
   const webcamRef = useRef(null);
@@ -187,63 +188,93 @@ export default function Registration() {
 
     setActionLoading(action);
 
-    const payload = {
-      ...form,
-      class_id: Number.parseInt(form.class_id, 10),
-      section_id: form.section_id ? Number.parseInt(form.section_id, 10) : null,
-      roll_number: form.roll_number ? Number.parseInt(form.roll_number, 10) : null,
-      agreed_annual_fee: form.agreed_annual_fee ? Number.parseFloat(form.agreed_annual_fee) : 0,
-      photo_path: photoPath,
-      academic_year_id: activeYear.id,
-    };
+    try {
+      const payload = {
+        ...form,
+        class_id: Number.parseInt(form.class_id, 10),
+        section_id: form.section_id ? Number.parseInt(form.section_id, 10) : null,
+        roll_number: form.roll_number ? Number.parseInt(form.roll_number, 10) : null,
+        agreed_annual_fee: form.agreed_annual_fee ? Number.parseFloat(form.agreed_annual_fee) : 0,
+        photo_path: photoPath,
+        academic_year_id: activeYear.id,
+      };
 
-    const created = await execute(() => window.api.student.create(payload));
+      const created = await execute(() => window.api.student.create(payload));
 
-    if (created) {
-      setSuccessMessage(`Student "${created.student_name}" registered successfully! (USIN: ${created.usin})`);
+      if (created) {
+        setSuccessMessage(`Student "${created.student_name}" registered successfully! (USIN: ${created.usin})`);
 
-      try {
-        if (action === 'download' || action === 'print') {
-          const blob = await createAdmissionPdfBlob(created);
+        try {
+          if (action === 'download' || action === 'print') {
+            const blob = await createAdmissionPdfBlob(created);
 
-          if (action === 'download') {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Admission_${created.usin}_${created.student_name}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }
-
-          if (action === 'print') {
-            const arrayBuffer = await blob.arrayBuffer();
-            const binary = new Uint8Array(arrayBuffer);
-            let binaryString = '';
-            for (let i = 0; i < binary.length; i += 1) {
-              binaryString += String.fromCharCode(binary[i]);
+            if (action === 'download') {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `Admission_${created.usin}_${created.student_name}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
             }
-            const base64Pdf = btoa(binaryString);
-            const printed = await execute(() => window.api.student.printPdf(base64Pdf));
-            if (!printed) {
-              throw new Error('Failed to send admission form to the default printer.');
+
+            if (action === 'print') {
+              const arrayBuffer = await blob.arrayBuffer();
+              const binary = new Uint8Array(arrayBuffer);
+              let binaryString = '';
+              for (let i = 0; i < binary.length; i += 1) {
+                binaryString += String.fromCharCode(binary[i]);
+              }
+              const base64Pdf = btoa(binaryString);
+              const printed = await execute(() => window.api.student.printPdf(base64Pdf));
+              if (!printed) {
+                throw new Error('Failed to send admission form to the default printer.');
+              }
             }
           }
+        } catch (err) {
+          console.error('Failed to process admission PDF action:', err);
         }
-      } catch (err) {
-        console.error('Failed to process admission PDF action:', err);
+
+        setForm({ ...INITIAL_FORM });
+        setPreviewUSIN('');
+        setPhotoPreview(null);
+        setPhotoPath('');
+        setErrors({});
+        setTimeout(() => setSuccessMessage(''), 5000);
       }
-
-      setForm({ ...INITIAL_FORM });
-      setPreviewUSIN('');
-      setPhotoPreview(null);
-      setPhotoPath('');
-      setErrors({});
-      setTimeout(() => setSuccessMessage(''), 5000);
+    } finally {
+      setActionLoading('');
     }
+  }
 
-    setActionLoading('');
+  async function handleDownloadEmptyForm() {
+    try {
+      setEmptyFormLoading(true);
+
+      const emptyBlob = await pdf(
+        <RegistrationFormPDF
+          company={companyProfile}
+          student={{}}
+          localPhotoUrl={null}
+          isEmpty={true}
+        />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(emptyBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'empty_admission_form.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to generate empty form PDF:', err);
+    } finally {
+      setEmptyFormLoading(false);
+    }
   }
 
   const classOptions = classes.map((c) => ({
@@ -262,13 +293,22 @@ export default function Registration() {
           </p>
         </div>
         <div>
-          <PDFDownloadLink
-            document={<RegistrationFormPDF company={companyProfile} student={{}} localPhotoUrl={null} isEmpty={true} />}
-            fileName="empty_admission_form.pdf"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 transition-colors"
+          <Button
+            type="button"
+            variant="danger"
+            disabled={emptyFormLoading}
+            onClick={()=>setForm({ ...INITIAL_FORM })}
           >
-            {({ loading: preparing }) => (preparing ? 'Preparing PDF...' : 'Print Empty Form')}
-          </PDFDownloadLink>
+            Clear Form
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={emptyFormLoading}
+            onClick={handleDownloadEmptyForm}
+          >
+            {emptyFormLoading ? 'Preparing PDF...' : 'Print Empty Form'}
+          </Button>
         </div>
       </div>
 
