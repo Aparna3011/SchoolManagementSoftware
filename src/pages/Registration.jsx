@@ -27,9 +27,11 @@ const INITIAL_FORM = {
   father_name: '',
   father_education: '',
   father_occupation: '',
+  father_aadhaar_no: '',
   mother_name: '',
   mother_education: '',
   mother_occupation: '',
+  mother_aadhaar_no: '',
   mother_tongue: '',
   emergency_contact_mother: '',
   emergency_contact_father: '',
@@ -142,11 +144,15 @@ export default function Registration() {
   function handleChange(e) {
     const { name, value } = e.target;
 
+    const sanitizedValue = ['father_aadhaar_no', 'mother_aadhaar_no'].includes(name)
+      ? value.replace(/\D/g, '').slice(0, 12)
+      : value;
+
     setForm((prev) => {
-      const updated = { ...prev, [name]: value };
+      const updated = { ...prev, [name]: sanitizedValue };
 
       if (name === 'class_id') {
-        const selectedClass = classes.find((c) => c.id.toString() === value);
+        const selectedClass = classes.find((c) => c.id.toString() === sanitizedValue);
         if (selectedClass) {
           updated.agreed_annual_fee = selectedClass.base_fee || '';
         } else {
@@ -266,6 +272,7 @@ export default function Registration() {
 
   function validateForm() {
     const newErrors = {};
+    const aadhaarRegex = /^\d{12}$/;
 
     if (!form.student_name.trim()) {
       newErrors.student_name = 'Student name is required.';
@@ -275,6 +282,12 @@ export default function Registration() {
     }
     if (!form.class_id) {
       newErrors.class_id = 'Class is required.';
+    }
+    if (form.father_aadhaar_no && !aadhaarRegex.test(form.father_aadhaar_no)) {
+      newErrors.father_aadhaar_no = 'Father Aadhaar must be exactly 12 digits.';
+    }
+    if (form.mother_aadhaar_no && !aadhaarRegex.test(form.mother_aadhaar_no)) {
+      newErrors.mother_aadhaar_no = 'Mother Aadhaar must be exactly 12 digits.';
     }
 
     setErrors(newErrors);
@@ -327,6 +340,8 @@ export default function Registration() {
 
       const payload = {
         ...form,
+        father_aadhaar_no: form.father_aadhaar_no.trim(),
+        mother_aadhaar_no: form.mother_aadhaar_no.trim(),
         class_id: Number.parseInt(form.class_id, 10),
         section_id: form.section_id ? Number.parseInt(form.section_id, 10) : null,
         roll_number: form.roll_number ? Number.parseInt(form.roll_number, 10) : null,
@@ -677,6 +692,16 @@ export default function Registration() {
                       placeholder="e.g., Business, Service"
                     />
                   </div>
+                  <Input
+                    label="Father's Aadhaar Number"
+                    name="father_aadhaar_no"
+                    value={form.father_aadhaar_no}
+                    onChange={handleChange}
+                    placeholder="12-digit Aadhaar number"
+                    inputMode="numeric"
+                    maxLength={12}
+                    error={errors.father_aadhaar_no}
+                  />
 
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-2">Father Government Proof</p>
@@ -744,6 +769,16 @@ export default function Registration() {
                       placeholder="e.g., Homemaker, Teacher"
                     />
                   </div>
+                  <Input
+                    label="Mother's Aadhaar Number"
+                    name="mother_aadhaar_no"
+                    value={form.mother_aadhaar_no}
+                    onChange={handleChange}
+                    placeholder="12-digit Aadhaar number"
+                    inputMode="numeric"
+                    maxLength={12}
+                    error={errors.mother_aadhaar_no}
+                  />
 
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-2">Mother Government Proof</p>

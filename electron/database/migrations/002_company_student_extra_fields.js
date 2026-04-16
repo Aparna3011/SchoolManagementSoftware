@@ -15,7 +15,9 @@ function up(db) {
     ],
     Students_Master: [
       { name: 'nationality', definition: "TEXT DEFAULT ''" },
+      { name: 'father_aadhaar_no', definition: "TEXT DEFAULT ''" },
       { name: 'father_govt_proof_path', definition: "TEXT DEFAULT ''" },
+      { name: 'mother_aadhaar_no', definition: "TEXT DEFAULT ''" },
       { name: 'mother_govt_proof_path', definition: "TEXT DEFAULT ''" },
       { name: 'birth_certificate_path', definition: "TEXT DEFAULT ''" },
     ],

@@ -265,15 +265,11 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Father's Aadhaar:</Text>
-                <Text style={styles.value}>
-                  {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
-                </Text>
+                <Text style={styles.value}>{getVal(student?.father_aadhaar_no)}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Mother's Aadhaar:</Text>
-                <Text style={styles.value}>
-                  {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
-                </Text>
+                <Text style={styles.value}>{getVal(student?.mother_aadhaar_no)}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Birth Certificate:</Text>

@@ -100,6 +100,7 @@ function up(db) {
       father_name TEXT DEFAULT '',
       father_education TEXT DEFAULT '',
       father_occupation TEXT DEFAULT '',
+      father_aadhaar_no TEXT DEFAULT '',
       father_govt_proof_path TEXT DEFAULT '',
       emergency_contact_father TEXT DEFAULT '',
       
@@ -107,6 +108,7 @@ function up(db) {
       mother_name TEXT DEFAULT '',
       mother_education TEXT DEFAULT '',
       mother_occupation TEXT DEFAULT '',
+      mother_aadhaar_no TEXT DEFAULT '',
       mother_govt_proof_path TEXT DEFAULT '',
       emergency_contact_mother TEXT DEFAULT '',
       birth_certificate_path TEXT DEFAULT '',
