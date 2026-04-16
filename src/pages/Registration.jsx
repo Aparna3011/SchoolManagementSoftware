@@ -9,6 +9,7 @@ import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { RegistrationFormPDF } from '../components/pdf/RegistrationFormPDF';
+import { toast } from 'react-toastify';
 
 const INITIAL_FORM = {
   surname: '',
@@ -115,7 +116,7 @@ export default function Registration() {
         }
       }
       setCompanyProfile(profile);
-      console.log('company' , profile)
+      console.log('company', profile)
     }
   }
 
@@ -353,11 +354,11 @@ export default function Registration() {
             type="button"
             variant="danger"
             disabled={emptyFormLoading}
-            onClick={()=>setForm({ ...INITIAL_FORM })}
+            onClick={(e) => { e.preventDefault(); setForm({ ...INITIAL_FORM }); toast.info('Form cleared. You can start fresh now.'); }}
           >
             Clear Form
           </Button>
-         
+
           <Button
             type="button"
             variant="primary"
@@ -396,7 +397,7 @@ export default function Registration() {
                       label="USIN"
                       name="usin"
                       value={previewUSIN}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       hint="Auto-generated"
                       disabled
                     />
@@ -721,20 +722,20 @@ export default function Registration() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Admission Form Preview (Development)</CardTitle>
-             {isDevMode && (
-            <Button
-              type="button"
-              variant="primary"
-              disabled={previewLoading}
-              onClick={handleRefreshPreview}
-            >
-              <RefreshCw size={14} />
-              {previewLoading ? 'Refreshing Preview...' : 'Refresh Preview'}
-            </Button>
-          )}
+            {isDevMode && (
+              <Button
+                type="button"
+                variant="primary"
+                disabled={previewLoading}
+                onClick={handleRefreshPreview}
+              >
+                <RefreshCw size={14} />
+                {previewLoading ? 'Refreshing Preview...' : 'Refresh Preview'}
+              </Button>
+            )}
           </CardHeader>
           <CardBody>
-            
+
             <div className="w-full h-[75vh]">
               {previewLoading && (
                 <div className="w-full h-full flex items-center justify-center text-slate-500">

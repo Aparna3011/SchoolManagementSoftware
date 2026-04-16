@@ -51,8 +51,9 @@ const styles = StyleSheet.create({
     marginTop: 1.5,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 80,
+    // border: '1px solid #d1d5db',
+    height: 80,
     objectFit: 'contain',
   },
 
@@ -181,11 +182,11 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
           <View style={styles.headerContainer}>
             <View style={{ flex: 1 }}>
               {!!company?.group_name && <Text style={styles.groupName}>{company.group_name}</Text>}
-              <Text style={styles.companyName}>{company?.firm_name || 'RAINBOW PLAY SCHOOL'}</Text>
+              <Text style={styles.companyName}>{company?.firm_name }</Text>
               <Text style={styles.addressText}>
-                {company?.address || "2118, D, Janwadkar's Complex, Shukrawar Peth, Kolhapur - 416 002"}
+                {company?.address }
               </Text>
-              <Text style={styles.addressText}>Mob: {company?.phone || '9653104744'}</Text>
+              <Text style={styles.addressText}>Mob: {company?.phone }</Text>
               {!!company?.website && <Text style={styles.addressText}>Website: {company.website}</Text>}
               {!!company?.reg_no && <Text style={styles.addressText}>Reg. No: {company.reg_no}</Text>}
             </View>
