@@ -28,6 +28,37 @@ function getPhotosDir() {
   return photosDir;
 }
 
+function resolvePhotoPrefix(fileName = '') {
+  const normalized = fileName.toLowerCase();
+
+  if (normalized.startsWith('logo_secondary_')) {
+    return 'logo_secondary_';
+  }
+  if (normalized.startsWith('logo_')) {
+    return 'logo_';
+  }
+  if (normalized.startsWith('father_profile_')) {
+    return 'father_profile_';
+  }
+  if (normalized.startsWith('mother_profile_')) {
+    return 'mother_profile_';
+  }
+  if (normalized.startsWith('student_profile_')) {
+    return 'student_profile_';
+  }
+  if (normalized.startsWith('father_govt_proof_')) {
+    return 'father_govt_proof_';
+  }
+  if (normalized.startsWith('mother_govt_proof_')) {
+    return 'mother_govt_proof_';
+  }
+  if (normalized.startsWith('birth_certificate_')) {
+    return 'birth_certificate_';
+  }
+
+  return 'student_profile_';
+}
+
 function registerStudentHandlers() {
   ipcMain.handle('student:getAll', async (_event, filters) => {
     try {
@@ -107,8 +138,7 @@ function registerStudentHandlers() {
     try {
       const photosDir = getPhotosDir();
       const ext = path.extname(fileName) || '.jpg';
-      const isLogo = fileName && fileName.startsWith('logo_');
-      const prefix = isLogo ? 'logo_' : 'student_';
+      const prefix = resolvePhotoPrefix(fileName);
       const safeName = `${prefix}${Date.now()}${ext}`;
       const filePath = path.join(photosDir, safeName);
 

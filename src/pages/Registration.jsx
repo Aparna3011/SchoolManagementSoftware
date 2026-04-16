@@ -22,6 +22,7 @@ const INITIAL_FORM = {
   agreed_annual_fee: '',
   religion: '',
   caste: '',
+  nationality: '',
   address: '',
   father_name: '',
   father_education: '',
@@ -43,6 +44,16 @@ export default function Registration() {
   const [previewUSIN, setPreviewUSIN] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoPath, setPhotoPath] = useState('');
+  const [photoFileName, setPhotoFileName] = useState('');
+  const [fatherGovtProofPreview, setFatherGovtProofPreview] = useState(null);
+  const [fatherGovtProofPath, setFatherGovtProofPath] = useState('');
+  const [fatherGovtProofFileName, setFatherGovtProofFileName] = useState('');
+  const [motherGovtProofPreview, setMotherGovtProofPreview] = useState(null);
+  const [motherGovtProofPath, setMotherGovtProofPath] = useState('');
+  const [motherGovtProofFileName, setMotherGovtProofFileName] = useState('');
+  const [birthCertificatePreview, setBirthCertificatePreview] = useState(null);
+  const [birthCertificatePath, setBirthCertificatePath] = useState('');
+  const [birthCertificateFileName, setBirthCertificateFileName] = useState('');
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -112,8 +123,16 @@ export default function Registration() {
       if (profile.logo_path) {
         const photoResult = await execute(() => window.api.student.getPhoto(profile.logo_path));
         if (photoResult) {
-          profile.logo_base64 = photoResult;
+          profile.logo_base64_primary = photoResult;
+
         }
+      }
+      if (profile.logo_path_secondary) {
+        const photoResultSec = await execute(() => window.api.student.getPhoto(profile.logo_path_secondary));
+        if (photoResultSec) {
+          profile.logo_base64_secondary = photoResultSec;
+
+        } else { profile.logo_base64_secondary = null; }
       }
       setCompanyProfile(profile);
       console.log('company', profile)
@@ -151,11 +170,8 @@ export default function Registration() {
     reader.onload = async () => {
       const base64 = reader.result;
       setPhotoPreview(base64);
-
-      const savedPath = await execute(() =>
-        window.api.student.savePhoto(base64, file.name),
-      );
-      if (savedPath) setPhotoPath(savedPath);
+      setPhotoPath('');
+      setPhotoFileName(file.name);
     };
     reader.readAsDataURL(file);
   }
@@ -167,17 +183,85 @@ export default function Registration() {
     if (!imageSrc) return;
 
     setPhotoPreview(imageSrc);
+    setPhotoPath('');
+    setPhotoFileName('webcam_capture.jpg');
     setWebcamOpen(false);
-
-    const savedPath = await execute(() =>
-      window.api.student.savePhoto(imageSrc, 'webcam_capture.jpg'),
-    );
-    if (savedPath) setPhotoPath(savedPath);
   }, [webcamRef, execute]);
 
   function clearPhoto() {
     setPhotoPreview(null);
     setPhotoPath('');
+    setPhotoFileName('');
+  }
+
+  function clearDocumentPhoto(setPreview, setPath, setFileName) {
+    setPreview(null);
+    setPath('');
+    setFileName('');
+  }
+
+  function resetRegistrationForm() {
+    setForm({ ...INITIAL_FORM });
+    setPreviewUSIN('');
+    setPhotoPreview(null);
+    setPhotoPath('');
+    setPhotoFileName('');
+    setFatherGovtProofPreview(null);
+    setFatherGovtProofPath('');
+    setFatherGovtProofFileName('');
+    setMotherGovtProofPreview(null);
+    setMotherGovtProofPath('');
+    setMotherGovtProofFileName('');
+    setBirthCertificatePreview(null);
+    setBirthCertificatePath('');
+    setBirthCertificateFileName('');
+    setErrors({});
+  }
+
+  function uploadDocumentPhoto(file, setPreview, setPath, setFileName) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+      setPreview(base64);
+      setPath('');
+      setFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function persistPhotoOnComplete(preview, currentPath, fileNameWithPrefix, label) {
+    if (currentPath) {
+      return currentPath;
+    }
+
+    if (!preview) {
+      return '';
+    }
+
+    const savedPath = await execute(() => window.api.student.savePhoto(preview, fileNameWithPrefix));
+    if (!savedPath) {
+      throw new Error(`Failed to save ${label}.`);
+    }
+
+    return savedPath;
+  }
+
+  function handleFatherGovtProofUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadDocumentPhoto(file, setFatherGovtProofPreview, setFatherGovtProofPath, setFatherGovtProofFileName);
+  }
+
+  function handleMotherGovtProofUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadDocumentPhoto(file, setMotherGovtProofPreview, setMotherGovtProofPath, setMotherGovtProofFileName);
+  }
+
+  function handleBirthCertificateUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadDocumentPhoto(file, setBirthCertificatePreview, setBirthCertificatePath, setBirthCertificateFileName);
   }
 
   function validateForm() {
@@ -213,13 +297,44 @@ export default function Registration() {
     setActionLoading(action);
 
     try {
+      const resolvedPhotoPath = await persistPhotoOnComplete(
+        photoPreview,
+        photoPath,
+        `student_profile_${photoFileName || 'webcam_capture.jpg'}`,
+        'student profile photo',
+      );
+
+      const resolvedFatherProofPath = await persistPhotoOnComplete(
+        fatherGovtProofPreview,
+        fatherGovtProofPath,
+        `father_govt_proof_${fatherGovtProofFileName || 'upload.jpg'}`,
+        'father government proof',
+      );
+
+      const resolvedMotherProofPath = await persistPhotoOnComplete(
+        motherGovtProofPreview,
+        motherGovtProofPath,
+        `mother_govt_proof_${motherGovtProofFileName || 'upload.jpg'}`,
+        'mother government proof',
+      );
+
+      const resolvedBirthCertificatePath = await persistPhotoOnComplete(
+        birthCertificatePreview,
+        birthCertificatePath,
+        `birth_certificate_${birthCertificateFileName || 'upload.jpg'}`,
+        'birth certificate',
+      );
+
       const payload = {
         ...form,
         class_id: Number.parseInt(form.class_id, 10),
         section_id: form.section_id ? Number.parseInt(form.section_id, 10) : null,
         roll_number: form.roll_number ? Number.parseInt(form.roll_number, 10) : null,
         agreed_annual_fee: form.agreed_annual_fee ? Number.parseFloat(form.agreed_annual_fee) : 0,
-        photo_path: photoPath,
+        photo_path: resolvedPhotoPath,
+        father_govt_proof_path: resolvedFatherProofPath,
+        mother_govt_proof_path: resolvedMotherProofPath,
+        birth_certificate_path: resolvedBirthCertificatePath,
         academic_year_id: activeYear.id,
       };
 
@@ -261,13 +376,12 @@ export default function Registration() {
           console.error('Failed to process admission PDF action:', err);
         }
 
-        setForm({ ...INITIAL_FORM });
-        setPreviewUSIN('');
-        setPhotoPreview(null);
-        setPhotoPath('');
-        setErrors({});
+        resetRegistrationForm();
         setTimeout(() => setSuccessMessage(''), 5000);
       }
+    } catch (err) {
+      console.error('Failed to complete registration:', err);
+      toast.error(err.message || 'Failed to complete registration. Please try again.');
     } finally {
       setActionLoading('');
     }
@@ -354,7 +468,11 @@ export default function Registration() {
             type="button"
             variant="danger"
             disabled={emptyFormLoading}
-            onClick={(e) => { e.preventDefault(); setForm({ ...INITIAL_FORM }); toast.info('Form cleared. You can start fresh now.'); }}
+            onClick={(e) => {
+              e.preventDefault();
+              resetRegistrationForm();
+              toast.info('Form cleared. You can start fresh now.');
+            }}
           >
             Clear Form
           </Button>
@@ -458,7 +576,7 @@ export default function Registration() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <Input
                       label="Religion"
                       name="religion"
@@ -473,6 +591,13 @@ export default function Registration() {
                       onChange={handleChange}
                       placeholder="Caste"
                     />
+                    <Input
+                      label="Nationality"
+                      name="nationality"
+                      value={form.nationality}
+                      onChange={handleChange}
+                      placeholder="e.g., Indian"
+                    />
                   </div>
 
                   <Textarea
@@ -483,6 +608,40 @@ export default function Registration() {
                     placeholder="Full residential address..."
                     rows={2}
                   />
+
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-2">Birth Certificate</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-md overflow-hidden flex items-center justify-center bg-slate-50">
+                        {birthCertificatePreview ? (
+                          <img src={birthCertificatePreview} alt="Birth certificate" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] text-slate-500 text-center px-1">No image</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <label className="inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                          <Upload size={14} />
+                          Upload
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleBirthCertificateUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {birthCertificatePreview && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => clearDocumentPhoto(setBirthCertificatePreview, setBirthCertificatePath, setBirthCertificateFileName)}
+                          >
+                            <X size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardBody>
             </Card>
@@ -516,6 +675,40 @@ export default function Registration() {
                       placeholder="e.g., Business, Service"
                     />
                   </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-2">Father Government Proof</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-md overflow-hidden flex items-center justify-center bg-slate-50">
+                        {fatherGovtProofPreview ? (
+                          <img src={fatherGovtProofPreview} alt="Father government proof" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] text-slate-500 text-center px-1">No image</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <label className="inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                          <Upload size={14} />
+                          Upload
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFatherGovtProofUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {fatherGovtProofPreview && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => clearDocumentPhoto(setFatherGovtProofPreview, setFatherGovtProofPath, setFatherGovtProofFileName)}
+                          >
+                            <X size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardBody>
             </Card>
@@ -548,6 +741,40 @@ export default function Registration() {
                       onChange={handleChange}
                       placeholder="e.g., Homemaker, Teacher"
                     />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-2">Mother Government Proof</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-md overflow-hidden flex items-center justify-center bg-slate-50">
+                        {motherGovtProofPreview ? (
+                          <img src={motherGovtProofPreview} alt="Mother government proof" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] text-slate-500 text-center px-1">No image</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <label className="inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                          <Upload size={14} />
+                          Upload
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleMotherGovtProofUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {motherGovtProofPreview && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => clearDocumentPhoto(setMotherGovtProofPreview, setMotherGovtProofPath, setMotherGovtProofFileName)}
+                          >
+                            <X size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardBody>

@@ -37,6 +37,7 @@ const CompanyModel = {
       udise_no,
       reg_no,
       logo_path,
+      logo_path_secondary,
     } = data;
 
     db.prepare(`
@@ -53,6 +54,7 @@ const CompanyModel = {
           udise_no = COALESCE(?, udise_no),
           reg_no = COALESCE(?, reg_no),
           logo_path = COALESCE(?, logo_path),
+          logo_path_secondary = COALESCE(?, logo_path_secondary),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = 1
     `).run(
@@ -68,6 +70,7 @@ const CompanyModel = {
       udise_no,
       reg_no,
       logo_path,
+      logo_path_secondary,
     );
 
     return this.get();

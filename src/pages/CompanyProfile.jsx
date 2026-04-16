@@ -18,6 +18,7 @@ const INITIAL_FORM = {
   udise_no: '',
   reg_no: '',
   logo_path: '',
+  logo_path_secondary: '',
 };
 
 export default function CompanyProfile() {
@@ -26,6 +27,7 @@ export default function CompanyProfile() {
   const [form, setForm] = useState({ ...INITIAL_FORM });
   const [saved, setSaved] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [secondaryLogoPreview, setSecondaryLogoPreview] = useState(null);
 
   useEffect(() => {
     loadProfile();
@@ -47,12 +49,20 @@ export default function CompanyProfile() {
         udise_no: profile.udise_no || '',
         reg_no: profile.reg_no || '',
         logo_path: profile.logo_path || '',
+        logo_path_secondary: profile.logo_path_secondary || '',
       });
 
       if (profile.logo_path) {
         const photoResult = await execute(() => window.api.student.getPhoto(profile.logo_path));
         if (photoResult) {
           setLogoPreview(photoResult);
+        }
+      }
+
+      if (profile.logo_path_secondary) {
+        const secondPhotoResult = await execute(() => window.api.student.getPhoto(profile.logo_path_secondary));
+        if (secondPhotoResult) {
+          setSecondaryLogoPreview(secondPhotoResult);
         }
       }
     }
@@ -78,6 +88,26 @@ export default function CompanyProfile() {
       );
       if (savedPath) {
         setForm((prev) => ({ ...prev, logo_path: savedPath }));
+      }
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSecondaryLogoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result;
+      setSecondaryLogoPreview(base64);
+
+      const savedPath = await execute(() =>
+        window.api.student.savePhoto(base64, `logo_secondary_${file.name}`),
+      );
+      if (savedPath) {
+        setForm((prev) => ({ ...prev, logo_path_secondary: savedPath }));
       }
     };
 
@@ -213,37 +243,71 @@ export default function CompanyProfile() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>School Logo</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-45 h-45 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden">
-                {logoPreview ? (
-                  <img src={logoPreview} alt="School Logo" className="w-full h-full object-contain" />
-                ) : (
-                  <div className="flex flex-col items-center text-slate-400">
-                    <Building2 size={32} className="mb-2 opacity-50" />
-                    <span className="text-xs">No logo uploaded</span>
-                  </div>
-                )}
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>School Logo</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-45 h-45 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden">
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="School Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="flex flex-col items-center text-slate-400">
+                      <Building2 size={32} className="mb-2 opacity-50" />
+                      <span className="text-xs">No logo uploaded</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-center w-full">
+                  <label className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                    <Upload size={16} />
+                    Upload Logo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
-              <div className="flex gap-2 justify-center w-full">
-                <label className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
-                  <Upload size={16} />
-                  Upload Logo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                </label>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Secondary Logo</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-45 h-45 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden">
+                  {secondaryLogoPreview ? (
+                    <img src={secondaryLogoPreview} alt="Secondary Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="flex flex-col items-center text-slate-400">
+                      <Building2 size={32} className="mb-2 opacity-50" />
+                      <span className="text-xs">No secondary logo uploaded</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-center w-full">
+                  <label className="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-400 cursor-pointer transition-colors">
+                    <Upload size={16} />
+                    Upload Secondary Logo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSecondaryLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </div>
       </div>
     </div>
   );

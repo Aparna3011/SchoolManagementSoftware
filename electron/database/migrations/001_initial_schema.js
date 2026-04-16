@@ -31,6 +31,7 @@ function up(db) {
       gstin TEXT DEFAULT '',
       udise_no TEXT DEFAULT '',
       logo_path TEXT DEFAULT '',
+      logo_path_secondary TEXT DEFAULT '',
       reg_no TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -90,6 +91,7 @@ function up(db) {
       gender TEXT DEFAULT '',
       religion TEXT DEFAULT '',
       caste TEXT DEFAULT '',
+      nationality TEXT DEFAULT '',
       blood_group TEXT DEFAULT '',
       mother_tongue TEXT DEFAULT '',
       residential_address TEXT DEFAULT '',
@@ -98,13 +100,16 @@ function up(db) {
       father_name TEXT DEFAULT '',
       father_education TEXT DEFAULT '',
       father_occupation TEXT DEFAULT '',
+      father_govt_proof_path TEXT DEFAULT '',
       emergency_contact_father TEXT DEFAULT '',
       
       -- Mother Details
       mother_name TEXT DEFAULT '',
       mother_education TEXT DEFAULT '',
       mother_occupation TEXT DEFAULT '',
+      mother_govt_proof_path TEXT DEFAULT '',
       emergency_contact_mother TEXT DEFAULT '',
+      birth_certificate_path TEXT DEFAULT '',
       
       status TEXT DEFAULT 'Active' CHECK(status IN ('Active', 'Alumni', 'Transferred')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

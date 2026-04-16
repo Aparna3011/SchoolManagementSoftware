@@ -9,25 +9,30 @@ const styles = StyleSheet.create({
   // More side margin, tighter top/bottom so form uses full page height
   page: {
     paddingHorizontal: 50,
-    paddingVertical: 45,
+    paddingTop: 25,
+    paddingBottom: 30,
     fontSize: 9.4,
+    // border: '3px solid red',
     fontFamily: 'Helvetica',
     lineHeight: 1.22,
     color: '#1a1a1a',
     justifyContent: 'space-between',
   },
+  leftAlignContent: { flex: 1 },
+  centerAlignContent: { flex: 1, alignItems: 'center' },
 
   // Header
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems:'center',
     marginBottom: 9,
-    borderBottom: 1.8,
-    borderBottomColor: '#333',
-    paddingBottom: 6,
+    borderBottomWidth: 1.8,
+    borderBottomColor: '#5E5E5E',
+    paddingBottom: 10,
   },
   groupName: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#7f1d1d',
     textTransform: 'uppercase',
@@ -35,25 +40,27 @@ const styles = StyleSheet.create({
     // backgroundColor: '#fee2e2',
     // padding: '2 6',
     borderRadius: 2,
-    alignSelf: 'flex-start',
+    // alignSelf: 'flex-start',
     marginBottom: 3,
   },
   companyName: {
-    fontSize: 16.5,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#b91c1c',
     letterSpacing: 1,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   addressText: {
-    fontSize: 8.2,
-    color: '#4b5563',
+    fontSize: 9,
+    paddingHorizontal:12,
+    textAlign: 'center',
+    color: '#323943',
     marginTop: 1.5,
   },
   logo: {
-    width: 80,
+    width: 120,
     // border: '1px solid #d1d5db',
-    height: 80,
+    height: 120,
     objectFit: 'contain',
   },
 
@@ -180,17 +187,18 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
         <View>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <View style={{ flex: 1 }}>
+            {company?.logo_base64_secondary && <Image src={company.logo_base64_secondary} style={styles.logo} />}
+            <View style={company?.logo_base64_secondary ? styles.centerAlignContent : styles.leftAlignContent}>
               {!!company?.group_name && <Text style={styles.groupName}>{company.group_name}</Text>}
-              <Text style={styles.companyName}>{company?.firm_name }</Text>
+              <Text style={styles.companyName}>{company?.firm_name}</Text>
               <Text style={styles.addressText}>
-                {company?.address }
+                {company?.address}
               </Text>
-              <Text style={styles.addressText}>Mob: {company?.phone }</Text>
+              <Text style={styles.addressText}>Mob: {company?.phone}</Text>
               {!!company?.website && <Text style={styles.addressText}>Website: {company.website}</Text>}
               {!!company?.reg_no && <Text style={styles.addressText}>Reg. No: {company.reg_no}</Text>}
             </View>
-            {company?.logo_base64 && <Image src={company.logo_base64} style={styles.logo} />}
+            {company?.logo_base64_primary && <Image src={company.logo_base64_primary} style={styles.logo} />}
           </View>
 
           <Text style={styles.title}>Admission Form</Text>
