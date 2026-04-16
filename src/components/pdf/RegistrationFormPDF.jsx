@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Image, Font, Checkbox } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 
 Font.register({
   family: 'Helvetica-Bold',
@@ -166,6 +166,44 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 8.9,
   },
+  addressLines: {
+    flex: 1,
+    marginLeft: 8,
+    gap: 4,
+  },
+  addressLine: {
+    borderBottom: '0.8px solid #9ca3af',
+    minHeight: 14,
+    paddingBottom: 2.5,
+    fontSize: 8.9,
+  },
+  aadhaarBoxesRow: {
+    flex: 1,
+    marginLeft: 5,
+    minHeight: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingRight: 10,
+  },
+  aadhaarBox: {
+    width: 15,
+    height: 15,
+    border: '0.8px solid #6b7280',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aadhaarGroupSeparator: {
+    // width: 6,
+    letterSpacing: -1,
+    // height: 15,
+    // borderLeft: '1px solid #4b5563',
+    // marginHorizontal: 3,
+  },
+  aadhaarDigit: {
+    fontSize: 8,
+    color: '#111827',
+  },
   checkboxLine: {
     flex: 1,
     marginLeft: 4,
@@ -231,11 +269,12 @@ const styles = StyleSheet.create({
     fontSize: 8.1,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#55647C',
+    color: '#8392AA',
     marginTop: 2,
   },
   nameFieldValue: {
     borderBottom: '0.8px solid #9ca3af',
+    textAlign: 'center',
     minHeight: 14,
     paddingBottom: 2.5,
     fontSize: 8.9,
@@ -261,6 +300,37 @@ const styles = StyleSheet.create({
 export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }) => {
   const getVal = (val) => (isEmpty ? '' : (val || ''));
   const hasUpload = (val) => !isEmpty && typeof val === 'string' && val.trim().length > 0;
+  const datePlaceholder = "\t         /         / 20      ";
+
+  const formatDateOrPlaceholder = (value) => {
+    if (isEmpty) return '';
+    if (!value) return datePlaceholder;
+
+    const valueString = String(value).trim();
+    if (!valueString) return datePlaceholder;
+
+    const ymdMatch = valueString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (ymdMatch) {
+      return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+    }
+
+    const parsedDate = new Date(valueString);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      const dd = String(parsedDate.getDate()).padStart(2, '0');
+      const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+      const yyyy = parsedDate.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    return datePlaceholder;
+  };
+
+  const formatAadhaar = (value) => {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 12);
+    const chars = digits.split('');
+    while (chars.length < 12) chars.push('');
+    return chars;
+  };
 
   const fatherProofUploaded = hasUpload(student?.father_govt_proof_path);
   const motherProofUploaded = hasUpload(student?.mother_govt_proof_path);
@@ -299,18 +369,38 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
 
                 <View style={styles.metaTopField}>
                   <Text style={styles.metaTopLabel}>Date of Admission:</Text>
-                  <Text style={styles.metaTopValue}>
-                    {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
-                  </Text>
+                  <Text style={[styles.metaTopValue]}>{formatDateOrPlaceholder(student?.admission_date)}</Text>
                 </View>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Father's Aadhaar:</Text>
-                <Text style={styles.value}>{getVal(student?.father_aadhaar_no)}</Text>
+                <View style={styles.aadhaarBoxesRow}>
+                  {formatAadhaar(student?.father_aadhaar_no).map((digit, index) => (
+                    <View key={`father-aadhaar-wrap-${index}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.aadhaarBox}>
+                        <Text style={styles.aadhaarDigit}>{digit}</Text>
+                      </View>
+                      {(index === 3 || index === 7) ? <View style={styles.aadhaarBox}>
+                        <Text style={styles.aadhaarGroupSeparator}>----</Text>
+                      </View> : null}
+                    </View>
+                  ))}
+                </View>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Mother's Aadhaar:</Text>
-                <Text style={styles.value}>{getVal(student?.mother_aadhaar_no)}</Text>
+                <View style={styles.aadhaarBoxesRow}>
+                  {formatAadhaar(student?.mother_aadhaar_no).map((digit, index) => (
+                    <View key={`mother-aadhaar-wrap-${index}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.aadhaarBox}>
+                        <Text style={styles.aadhaarDigit}>{digit}</Text>
+                      </View>
+                      {(index === 3 || index === 7) ? <View style={styles.aadhaarBox}>
+                        <Text style={styles.aadhaarGroupSeparator}>----</Text>
+                      </View> : null}
+                    </View>
+                  ))}
+                </View>
               </View>
               <View style={[styles.row, { alignItems: 'center' }]}>
                 <Text style={styles.label}>Documents:</Text>
@@ -380,7 +470,7 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
             <View style={{ flexDirection: 'row', gap: 9 }}>
               <View style={[styles.row, { flex: 1 }]}>
                 <Text style={[styles.label, { width: 122 }]}> Date of Birth ( dd / mm / yyyy ):</Text>
-                <Text style={styles.value}>{student?.dob}</Text>
+                <Text style={styles.value}>{formatDateOrPlaceholder(student?.dob)}</Text>
               </View>
               <View style={[styles.row, { flex: 1 }]}>
                 <Text style={[styles.label, { width: 58 }]}> Class:</Text>
@@ -399,7 +489,10 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
             </View>
             <View style={styles.row}>
               <Text style={styles.label}> Residential Address:</Text>
-              <Text style={styles.valueTall}>{getVal(student?.address)}</Text>
+              <View style={styles.addressLines}>
+                <Text style={styles.addressLine}>{getVal(student?.address)}</Text>
+                <Text style={styles.addressLine}>{isEmpty ? '' : ' '}</Text>
+              </View>
             </View>
 
           </View>
