@@ -426,6 +426,8 @@ export default function Registration() {
         class_name: selectedClass ? selectedClass.class_name : '',
       };
 
+      console.log('Preview student data:', previewStudent);
+
       const blob = await pdf(
         <RegistrationFormPDF
           company={companyProfile}
@@ -973,7 +975,7 @@ export default function Registration() {
                 <iframe
                   title="Registration PDF Preview"
                   src={previewPdfUrl}
-                  className="w-full h-full border border-slate-200 rounded-md"
+                  className="w-full h-[1400px] border border-slate-200 rounded-md"
                 />
               )}
               {!previewLoading && !previewPdfUrl && (

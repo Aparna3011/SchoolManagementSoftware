@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems:'center',
+    alignItems: 'center',
     marginBottom: 9,
     borderBottomWidth: 1.8,
     borderBottomColor: '#5E5E5E',
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 9,
-    paddingHorizontal:12,
+    paddingHorizontal: 12,
     textAlign: 'center',
     color: '#323943',
     marginTop: 1.5,
@@ -76,6 +76,33 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
+
+  metaTopRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 1,
+    alignItems: 'flex-end',
+  },
+  metaTopField: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 0,
+  },
+  metaTopLabel: {
+    width: 98,
+    fontWeight: 'bold',
+    fontSize: 8.1,
+    color: '#374151',
+  },
+  metaTopValue: {
+    flex: 1,
+    borderBottom: '0.8px solid #9ca3af',
+    minHeight: 14,
+    paddingBottom: 2.5,
+    marginLeft: 8,
+    fontSize: 8.9,
+  },
   // Meta
   metaContainer: {
     flexDirection: 'row',
@@ -160,6 +187,23 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     marginBottom: 1.7,
   },
+  nameField: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  nameFieldLabel: {
+    fontSize: 8.1,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#55647C',
+    marginTop: 2,
+  },
+  nameFieldValue: {
+    borderBottom: '0.8px solid #9ca3af',
+    minHeight: 14,
+    paddingBottom: 2.5,
+    fontSize: 8.9,
+  },
 
   // Footer signatures - bigger lines for actual signing
   footer: {
@@ -206,17 +250,39 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
           {/* Meta */}
           <View style={styles.metaContainer}>
             <View style={styles.metaColumn}>
-              <View style={styles.row}>
-                <Text style={styles.label}>USIN:</Text>
-                <Text style={styles.value}>{getVal(student?.usin)}</Text>
+              <View style={styles.metaTopRow}>
+                <View style={styles.metaTopField}>
+                  <Text style={styles.metaTopLabel}>USIN:</Text>
+                  <Text style={styles.metaTopValue}>{getVal(student?.usin)}</Text>
+                </View>
+
+                <View style={styles.metaTopField}>
+                  <Text style={styles.metaTopLabel}>Date of Admission:</Text>
+                  <Text style={styles.metaTopValue}>
+                    {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
+                  </Text>
+                </View>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Date of Admission:</Text>
+                <Text style={styles.label}>Father's Aadhaar:</Text>
+                <Text style={styles.value}>
+                  {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Mother's Aadhaar:</Text>
+                <Text style={styles.value}>
+                  {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Birth Certificate:</Text>
                 <Text style={styles.value}>
                   {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
                 </Text>
               </View>
             </View>
+
             <View style={styles.photoBox}>
               {isEmpty || !localPhotoUrl ? (
                 <Text style={styles.photoText}>Affix Photo</Text>
@@ -230,24 +296,46 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
           <View style={styles.block}>
             <Text style={styles.sectionHeader}>STUDENT INFORMATION</Text>
             <View style={styles.row}>
-              <Text style={styles.label}>1. Name of the Student:</Text>
-              <Text style={styles.valueTall}>
-                {getVal(student?.surname)} {getVal(student?.student_name)} {getVal(student?.father_first_name)}
-              </Text>
+              <Text style={styles.label}> Name of the Student:</Text>
+
+              <View style={styles.nameField}>
+                <Text style={styles.nameFieldValue}>{getVal(student?.surname)}</Text>
+                <Text style={styles.nameFieldLabel}>Surname</Text>
+              </View>
+
+              <View style={styles.nameField}>
+                <Text style={styles.nameFieldValue}>{getVal(student?.student_name)}</Text>
+                <Text style={styles.nameFieldLabel}>First</Text>
+              </View>
+
+              <View style={styles.nameField}>
+                <Text style={styles.nameFieldValue}>{getVal(student?.father_first_name)}</Text>
+                <Text style={styles.nameFieldLabel}>Middle</Text>
+              </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 9 }}>
               <View style={[styles.row, { flex: 1 }]}>
-                <Text style={[styles.label, { width: 122 }]}>2. Date of Birth:</Text>
-                <Text style={styles.value}>{getVal(student?.dob)}</Text>
+                <Text style={[styles.label, { width: 122 }]}>Nationality:</Text>
+                <Text style={styles.valueTall}>{getVal(student?.nationality)}</Text>
               </View>
               <View style={[styles.row, { flex: 1 }]}>
-                <Text style={[styles.label, { width: 58 }]}>3. Class:</Text>
+                <Text style={[styles.label, { width: 60 }]}>Mother  Tongue:</Text>
+                <Text style={styles.value}>{getVal(student?.mother_tongue)}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 9 }}>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 122 }]}> Date of Birth ( dd / mm / yyyy ):</Text>
+                <Text style={styles.value}>{student?.dob}</Text>
+              </View>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 58 }]}> Class:</Text>
                 <Text style={styles.value}>{getVal(student?.class_name)}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 9 }}>
               <View style={[styles.row, { flex: 1 }]}>
-                <Text style={[styles.label, { width: 122 }]}>4. Religion:</Text>
+                <Text style={[styles.label, { width: 122 }]}> Religion:</Text>
                 <Text style={styles.value}>{getVal(student?.religion)}</Text>
               </View>
               <View style={[styles.row, { flex: 1 }]}>
@@ -256,44 +344,45 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
               </View>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>5. Residential Address:</Text>
+              <Text style={styles.label}> Residential Address:</Text>
               <Text style={styles.valueTall}>{getVal(student?.address)}</Text>
             </View>
+
           </View>
 
           {/* Parent details */}
           <View style={styles.block}>
             <Text style={styles.sectionHeader}>PARENTAL DETAILS</Text>
             <View style={styles.row}>
-              <Text style={styles.label}>6. Name of the Father in full:</Text>
+              <Text style={styles.label}> Name of the Father in full:</Text>
               <Text style={styles.value}>{getVal(student?.father_name)}</Text>
             </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>7. Father's Education:</Text>
-              <Text style={styles.value}>{getVal(student?.father_education)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>8. Father's Occupation:</Text>
-              <Text style={styles.value}>{getVal(student?.father_occupation)}</Text>
+            <View style={{ flexDirection: 'row', gap: 9 }}>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 120 }]}> Father's Education:</Text>
+                <Text style={styles.value}>{getVal(student?.father_education)}</Text>
+              </View>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 80 }]}> Father's Occupation:</Text>
+                <Text style={styles.value}>{getVal(student?.father_occupation)}</Text>
+              </View>
             </View>
 
             <View style={[styles.row, { marginTop: 3.5 }]}>
-              <Text style={styles.label}>9. Name of the Mother in full:</Text>
+              <Text style={styles.label}> Name of the Mother in full:</Text>
               <Text style={styles.value}>{getVal(student?.mother_name)}</Text>
             </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>10. Mother's Education:</Text>
-              <Text style={styles.value}>{getVal(student?.mother_education)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>11. Mother's Occupation:</Text>
-              <Text style={styles.value}>{getVal(student?.mother_occupation)}</Text>
+            <View style={{ flexDirection: 'row', gap: 9 }}>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 120 }]}>Mother's Education:</Text>
+                <Text style={styles.value}>{getVal(student?.mother_education)}</Text>
+              </View>
+              <View style={[styles.row, { flex: 1 }]}>
+                <Text style={[styles.label, { width: 80 }]}>Mother's Occupation:</Text>
+                <Text style={styles.value}>{getVal(student?.mother_occupation)}</Text>
+              </View>
             </View>
 
-            <View style={[styles.row, { marginTop: 3.5 }]}>
-              <Text style={styles.label}>12. Mother Tongue:</Text>
-              <Text style={styles.value}>{getVal(student?.mother_tongue)}</Text>
-            </View>
           </View>
 
           {/* Emergency */}
