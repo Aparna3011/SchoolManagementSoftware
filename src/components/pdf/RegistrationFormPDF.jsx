@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font, Checkbox } from '@react-pdf/renderer';
 
 Font.register({
   family: 'Helvetica-Bold',
@@ -166,6 +166,42 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 8.9,
   },
+  checkboxLine: {
+    flex: 1,
+    marginLeft: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 16,
+    minHeight: 14,
+    paddingBottom: 2.5,
+  },
+  checkboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  checkboxBox: {
+    width: 12,
+    height: 12,
+    border: '0.8px solid #6b7280',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxTick: {
+    width: 4,
+    height: 7,
+    borderRightWidth: 1.4,
+    borderBottomWidth: 1.4,
+    borderColor: '#111827',
+    transform: 'rotate(45deg)',
+    marginTop: -1,
+    color: '#111827',
+  },
+  checkboxLabel: {
+    fontSize: 7.7,
+    color: '#374151',
+  },
 
   block: { marginBottom: 8 },
 
@@ -224,6 +260,11 @@ const styles = StyleSheet.create({
 
 export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }) => {
   const getVal = (val) => (isEmpty ? '' : (val || ''));
+  const hasUpload = (val) => !isEmpty && typeof val === 'string' && val.trim().length > 0;
+
+  const fatherProofUploaded = hasUpload(student?.father_govt_proof_path);
+  const motherProofUploaded = hasUpload(student?.mother_govt_proof_path);
+  const birthCertificateUploaded = hasUpload(student?.birth_certificate_path);
 
   return (
     <Document>
@@ -271,11 +312,28 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
                 <Text style={styles.label}>Mother's Aadhaar:</Text>
                 <Text style={styles.value}>{getVal(student?.mother_aadhaar_no)}</Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Birth Certificate:</Text>
-                <Text style={styles.value}>
-                  {isEmpty ? '' : (student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : '')}
-                </Text>
+              <View style={[styles.row, { alignItems: 'center' }]}>
+                <Text style={styles.label}>Documents:</Text>
+                <View style={styles.checkboxLine}>
+                  <View style={styles.checkboxItem}>
+                    <View style={styles.checkboxBox}>
+                      {fatherProofUploaded ? <View style={styles.checkboxTick} /> : null}
+                    </View>
+                    <Text style={styles.checkboxLabel}>Father Proof</Text>
+                  </View>
+                  <View style={styles.checkboxItem}>
+                    <View style={styles.checkboxBox}>
+                      {motherProofUploaded ? <View style={styles.checkboxTick} /> : null}
+                    </View>
+                    <Text style={styles.checkboxLabel}>Mother Proof</Text>
+                  </View>
+                  <View style={styles.checkboxItem}>
+                    <View style={styles.checkboxBox}>
+                      {birthCertificateUploaded ? <View style={styles.checkboxTick} /> : null}
+                    </View>
+                    <Text style={styles.checkboxLabel}>Birth Certificate</Text>
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -402,7 +460,7 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
             <Text style={styles.instructionText}>1) The School does not undertake any responsibility for admission to Higher Classes.</Text>
             <Text style={styles.instructionText}>2) Punctuality and Regularity in attendance be strictly observed.</Text>
             <Text style={styles.instructionText}>3) Fees once paid will not be refunded.</Text>
-            <Text style={styles.instructionText}>4) Gathering is compulsory, in case who is absent for gathering money will not be refunded.</Text>
+            <Text style={styles.instructionText}>4) Gathering is compulsory,fees will be applicable as per schedule, in case who is absent for gathering money will not be refunded.</Text>
             <Text style={styles.instructionText}>5) Picnic will not be compulsory. Picnic Fee will be charged seperately to students, who want to come for picnic. In case those who are absent for picnic money will not be refunded.</Text>
             <Text style={[styles.instructionText, { marginTop: 4, fontWeight: 'bold', color: '#111827' }]}>
               • I HAVE READ ABOVE INSTRUCTIONS AND AGREE TO ABIDE BY THEM.
