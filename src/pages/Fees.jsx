@@ -120,6 +120,8 @@ export default function Fees() {
   }
 
   async function handlePreviewReceipt(paymentRow) {
+
+    console.log('Generating preview for payment:', companyProfile);
     if (!isDevMode || !paymentRow || !selectedStudent) return;
 
     try {
