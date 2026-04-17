@@ -49,7 +49,7 @@ export default function Attendance() {
     setView("students");
 
    const res = await execute(() =>
-  window.api.enrollments.getStudents({
+  window.api.student.getAll({
     classId: classId,
   })
 );

@@ -1,6 +1,6 @@
 const { amountToWordsINR } = require('../utils/amountInWords');
 
-const version = 4;
+const version = 5
 const name = 'payment_amount_in_words';
 
 /**

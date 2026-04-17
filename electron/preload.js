@@ -61,4 +61,11 @@ contextBridge.exposeInMainWorld('api', {
     getStats: () => ipcRenderer.invoke('payment:getStats'),
     generateReceiptNo: () => ipcRenderer.invoke('payment:generateReceiptNo'),
   },
+
+  // ============ ATTENDANCE ============
+  attendance: {
+    
+    getByDate: (date) => ipcRenderer.invoke('attendance:getByDate', date),
+    saveBulk: (records) => ipcRenderer.invoke('attendance:saveBulk', records),
+  },
 });
