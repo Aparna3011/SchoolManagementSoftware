@@ -332,6 +332,42 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
     return chars;
   };
 
+  const splitAddressLines = (value, maxCharsPerLine = 58) => {
+    if (isEmpty) return ['', ''];
+
+    const raw = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!raw) return ['', ''];
+
+    const words = raw.split(' ');
+    let line1 = '';
+    let line2 = '';
+
+    words.forEach((word) => {
+      const nextForLine1 = line1 ? `${line1} ${word}` : word;
+      if (!line2 && nextForLine1.length <= maxCharsPerLine) {
+        line1 = nextForLine1;
+        return;
+      }
+
+      const nextForLine2 = line2 ? `${line2} ${word}` : word;
+      if (nextForLine2.length <= maxCharsPerLine) {
+        line2 = nextForLine2;
+        return;
+      }
+
+      if (line2.length < maxCharsPerLine) {
+        const remaining = maxCharsPerLine - (line2 ? line2.length + 1 : 0);
+        if (remaining > 0) {
+          line2 = `${line2}${line2 ? ' ' : ''}${word.slice(0, remaining)}`;
+        }
+      }
+    });
+
+    return [line1, line2];
+  };
+
+  const [addressLine1, addressLine2] = splitAddressLines(student?.address);
+
   const fatherProofUploaded = hasUpload(student?.father_govt_proof_path);
   const motherProofUploaded = hasUpload(student?.mother_govt_proof_path);
   const birthCertificateUploaded = hasUpload(student?.birth_certificate_path);
@@ -439,7 +475,7 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
           {/* Student info */}
           <View style={styles.block}>
             <Text style={styles.sectionHeader}>STUDENT INFORMATION</Text>
-            <View style={styles.row}>
+            <View style={[styles.row, { alignItems: 'center' }]}>
               <Text style={styles.label}> Name of the Student:</Text>
 
               <View style={styles.nameField}>
@@ -487,11 +523,11 @@ export const RegistrationFormPDF = ({ student, company, isEmpty, localPhotoUrl }
                 <Text style={styles.value}>{getVal(student?.caste)}</Text>
               </View>
             </View>
-            <View style={styles.row}>
+            <View style={[styles.row, { alignItems: 'flex-start' }] }>
               <Text style={styles.label}> Residential Address:</Text>
               <View style={styles.addressLines}>
-                <Text style={styles.addressLine}>{getVal(student?.address)}</Text>
-                <Text style={styles.addressLine}>{isEmpty ? '' : ' '}</Text>
+                <Text style={styles.addressLine}>{addressLine1}</Text>
+                <Text style={styles.addressLine}>{addressLine2}</Text>
               </View>
             </View>
 
