@@ -7,7 +7,7 @@ function generateUSIN(db, academicYearId, classId) {
     .prepare('SELECT school_code FROM Company_Profile WHERE id = 1')
     .get();
   const year = db
-    .prepare('SELECT start_year FROM Academic_Years WHERE id = ?')
+    .prepare('SELECT start_year, start_date FROM Academic_Years WHERE id = ?')
     .get(academicYearId);
   const classMaster = db
     .prepare('SELECT short_code FROM Classes_Master WHERE id = ?')
@@ -16,14 +16,17 @@ function generateUSIN(db, academicYearId, classId) {
   if (!company?.school_code) {
     throw new Error('School code is not configured in company profile.');
   }
-  if (!year?.start_year) {
+  const resolvedStartYear = year?.start_year
+    || (year?.start_date ? Number.parseInt(String(year.start_date).slice(0, 4), 10) : null);
+
+  if (!resolvedStartYear) {
     throw new Error('Academic year is invalid or missing start year.');
   }
   if (!classMaster?.short_code) {
     throw new Error('Class is invalid or missing short code.');
   }
 
-  const prefix = `${company.school_code}${year.start_year}${classMaster.short_code}`;
+  const prefix = `${company.school_code}${resolvedStartYear}${classMaster.short_code}`;
 
   const lastRecord = db
     .prepare(

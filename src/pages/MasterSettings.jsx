@@ -23,7 +23,12 @@ export default function MasterSettings() {
   const [years, setYears] = useState([]);
   const [yearModalOpen, setYearModalOpen] = useState(false);
   const [editingYear, setEditingYear] = useState(null);
-  const [yearForm, setYearForm] = useState({ year_label: '', start_year: '', is_active: false });
+  const [yearForm, setYearForm] = useState({
+    year_label: '',
+    start_date: '',
+    end_date: '',
+    is_active: false,
+  });
 
   // ---- Class State ----
   const [classes, setClasses] = useState([]);
@@ -48,23 +53,34 @@ export default function MasterSettings() {
       setEditingYear(year);
       setYearForm({
         year_label: year.year_label,
-        start_year: year.start_year?.toString() || '',
+        start_date: year.start_date || '',
+        end_date: year.end_date || '',
         is_active: !!year.is_active,
       });
     } else {
       setEditingYear(null);
-      setYearForm({ year_label: '', start_year: '', is_active: false });
+      setYearForm({
+        year_label: '',
+        start_date: '',
+        end_date: '',
+        is_active: false,
+      });
     }
     setYearModalOpen(true);
   }
 
   async function handleYearSave() {
-    if (!yearForm.year_label.trim()) return;
+    if (!yearForm.year_label.trim() || !yearForm.start_date || !yearForm.end_date) return;
+
+    const payload = {
+      ...yearForm,
+      start_year: Number.parseInt(yearForm.start_date.slice(0, 4), 10),
+    };
 
     if (editingYear) {
-      await execute(() => window.api.financialYear.update(editingYear.id, yearForm));
+      await execute(() => window.api.financialYear.update(editingYear.id, payload));
     } else {
-      await execute(() => window.api.financialYear.create(yearForm));
+      await execute(() => window.api.financialYear.create(payload));
     }
 
     setYearModalOpen(false);
@@ -135,7 +151,16 @@ export default function MasterSettings() {
 
   const yearColumns = [
     { key: 'year_label', label: 'Year Label' },
-    { key: 'start_year', label: 'Start Year', render: (v) => v || '-' },
+    {
+      key: 'start_date',
+      label: 'Start Date',
+      render: (v) => (v ? new Date(v).toLocaleDateString('en-IN') : '-'),
+    },
+    {
+      key: 'end_date',
+      label: 'End Date',
+      render: (v) => (v ? new Date(v).toLocaleDateString('en-IN') : '-'),
+    },
     {
       key: 'is_active',
       label: 'Status',
@@ -272,12 +297,19 @@ export default function MasterSettings() {
             hint="Example: 2026-2027"
           />
           <Input
-            label="Start Year"
-            name="start_year"
-            type="number"
-            value={yearForm.start_year}
-            onChange={(e) => setYearForm((p) => ({ ...p, start_year: e.target.value }))}
-            placeholder="e.g., 2026"
+            label="Start Date"
+            name="start_date"
+            type="date"
+            value={yearForm.start_date}
+            onChange={(e) => setYearForm((p) => ({ ...p, start_date: e.target.value }))}
+            required
+          />
+          <Input
+            label="End Date"
+            name="end_date"
+            type="date"
+            value={yearForm.end_date}
+            onChange={(e) => setYearForm((p) => ({ ...p, end_date: e.target.value }))}
             required
           />
           <div className="flex items-center gap-3 mt-2">
