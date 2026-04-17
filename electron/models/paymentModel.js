@@ -1,4 +1,5 @@
 const { getDatabase } = require('../database/connection');
+const { amountToWordsINR } = require('../database/utils/amountInWords');
 
 function getActiveAcademicYear(db) {
   return db.prepare('SELECT * FROM Academic_Years WHERE is_active = 1').get();
@@ -43,28 +44,35 @@ const PaymentModel = {
     return `${prefix}${String(nextSeq).padStart(3, '0')}`;
   },
 
-  create(data) {
-    const db = getDatabase();
-    const { enrollment_id, amount_paid, payment_mode } = data;
+ create(data) {
+  const db = getDatabase();
+  const { enrollment_id, amount_paid, payment_mode } = data;
 
-    if (!enrollment_id) {
-      throw new Error('Enrollment is required to record payment.');
-    }
+  if (!enrollment_id) {
+    throw new Error('Enrollment is required to record payment.');
+  }
 
-    const receipt_no = this.generateReceiptNo();
+  const amountNumber = Number(amount_paid);
+  if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+    throw new Error('Amount paid must be a valid number greater than zero.');
+  }
 
-    const result = db.prepare(`
-      INSERT INTO Payments (enrollment_id, receipt_no, amount_paid, payment_mode)
-      VALUES (?, ?, ?, ?)
-    `).run(
-      enrollment_id,
-      receipt_no,
-      amount_paid,
-      payment_mode || 'Cash',
-    );
+  const receipt_no = this.generateReceiptNo();
+  const amount_in_words = amountToWordsINR(amountNumber);
 
-    return this.getById(result.lastInsertRowid);
-  },
+  const result = db.prepare(`
+    INSERT INTO Payments (enrollment_id, receipt_no, amount_paid, payment_mode, amount_in_words)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    enrollment_id,
+    receipt_no,
+    amountNumber,
+    payment_mode || 'Cash',
+    amount_in_words,
+  );
+
+  return this.getById(result.lastInsertRowid);
+},
 
   cancel(id) {
     const db = getDatabase();
