@@ -147,6 +147,7 @@ function up(db) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       enrollment_id INTEGER NOT NULL,
       receipt_no TEXT NOT NULL UNIQUE,
+      amount_in_words TEXT DEFAULT NULL,
       amount_paid REAL NOT NULL,
       payment_date DATE DEFAULT CURRENT_DATE,
       payment_mode TEXT DEFAULT 'Cash',

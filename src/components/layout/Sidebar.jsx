@@ -34,7 +34,7 @@ export function Sidebar() {
         <div>
           <div className="text-white text-sm font-semibold leading-tight tracking-wide">School Management System</div>
           <div className="text-slate-400 text-xs font-normal mt-0.5">Management System</div>
-          <div className="text-slate-400 text-xs font-normal mt-0.5">Aparna Testing</div>
+          
         </div>
       </div>
 
