@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
 export const FeesReceiptPDF = ({ payment, student, company, ledger }) => {
   return (
     <Document>
-      <Page size="A5" orientation="landscape" style={styles.page}>
+      <Page size="A5" style={styles.page}>
         <View style={styles.header}>
           {!!company?.group_name && <Text style={styles.subText}>{company.group_name}</Text>}
           <Text style={styles.companyName}>{company?.firm_name || 'School Name'}</Text>

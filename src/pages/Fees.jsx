@@ -1,18 +1,19 @@
-import { useState } from 'react';
-import { Search, IndianRupee, FileText, XCircle, AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Search, IndianRupee, FileText, XCircle, AlertCircle, Eye, RefreshCw } from 'lucide-react';
+import { pdf, PDFDownloadLink } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Table } from '../components/ui/Table';
 import { Modal } from '../components/ui/Modal';
 import { FeesReceiptPDF } from '../components/pdf/FeesReceiptPDF';
 
 export default function Fees() {
   const { execute, loading } = useDatabase();
+  const isDevMode = import.meta.env.DEV;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [students, setStudents] = useState([]);
@@ -29,6 +30,24 @@ export default function Fees() {
   });
   const [nextReceiptNo, setNextReceiptNo] = useState('');
 
+  const [previewPayment, setPreviewPayment] = useState(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+    };
+  }, [previewPdfUrl]);
+
+  function clearPreview() {
+    setPreviewPayment(null);
+    setPreviewPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return '';
+    });
+  }
+
   async function handleSearch(e) {
     e?.preventDefault();
 
@@ -41,9 +60,11 @@ export default function Fees() {
     if (results) {
       setStudents(results.filter((s) => s.enrollment_id));
     }
+
     setSearched(true);
     setSelectedStudent(null);
     setLedger(null);
+    clearPreview();
 
     if (!companyProfile) {
       const profile = await execute(() => window.api.company.get());
@@ -53,6 +74,7 @@ export default function Fees() {
 
   async function selectStudent(student) {
     setSelectedStudent(student);
+    clearPreview();
     await loadLedger(student.enrollment_id);
   }
 
@@ -97,6 +119,35 @@ export default function Fees() {
     await loadLedger(selectedStudent.enrollment_id);
   }
 
+  async function handlePreviewReceipt(paymentRow) {
+    if (!isDevMode || !paymentRow || !selectedStudent) return;
+
+    try {
+      setPreviewLoading(true);
+      setPreviewPayment(paymentRow);
+
+      const blob = await pdf(
+        <FeesReceiptPDF
+          payment={paymentRow}
+          student={selectedStudent}
+          company={companyProfile}
+          ledger={ledger}
+        />,
+      ).toBlob();
+
+      const nextUrl = URL.createObjectURL(blob);
+      setPreviewPdfUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return nextUrl;
+      });
+    } catch (err) {
+      console.error('Failed to generate receipt preview:', err);
+      setPreviewPdfUrl('');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   const paymentColumns = [
     { key: 'receipt_no', label: 'Receipt No.' },
     {
@@ -121,7 +172,7 @@ export default function Fees() {
     {
       key: 'actions',
       label: '',
-      width: '120px',
+      width: '170px',
       render: (_, row) =>
         row.status === 'Active' ? (
           <div className="flex gap-2 justify-end">
@@ -133,6 +184,20 @@ export default function Fees() {
             >
               {({ loading: preparing }) => (preparing ? <AlertCircle size={14} className="animate-spin" /> : <FileText size={14} />)}
             </PDFDownloadLink>
+
+            {isDevMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handlePreviewReceipt(row)}
+                title="Preview Receipt (Dev)"
+              >
+                {previewLoading && previewPayment?.id === row.id
+                  ? <RefreshCw size={14} className="animate-spin" />
+                  : <Eye size={14} />}
+              </Button>
+            )}
+
             <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Receipt">
               <XCircle size={14} />
             </Button>
@@ -286,6 +351,54 @@ export default function Fees() {
                   />
                 </CardBody>
               </Card>
+
+              {isDevMode && previewPayment && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      Receipt Preview (Development) - {previewPayment.receipt_no}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        disabled={previewLoading}
+                        onClick={() => handlePreviewReceipt(previewPayment)}
+                      >
+                        <RefreshCw size={14} className={previewLoading ? 'animate-spin' : ''} />
+                        {previewLoading ? 'Refreshing...' : 'Refresh Preview'}
+                      </Button>
+                      <Button type="button" variant="secondary" size="sm" onClick={clearPreview}>
+                        Close
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardBody>
+                    <div className="w-full min-h-[520px]">
+                      {previewLoading && (
+                        <div className="w-full h-[520px] flex items-center justify-center text-slate-500">
+                          Generating receipt preview...
+                        </div>
+                      )}
+
+                      {!previewLoading && previewPdfUrl && (
+                        <iframe
+                          title="Receipt PDF Preview"
+                          src={previewPdfUrl}
+                          className="w-full h-[720px] border border-slate-200 rounded-md"
+                        />
+                      )}
+
+                      {!previewLoading && !previewPdfUrl && (
+                        <div className="w-full h-[520px] flex items-center justify-center text-slate-500">
+                          Preview could not be generated.
+                        </div>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
             </div>
           )}
         </div>
