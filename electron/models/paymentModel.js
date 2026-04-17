@@ -1,162 +1,151 @@
 const { getDatabase } = require('../database/connection');
 
-/**
- * Payment Model
- * 
- * Data access layer for the Payments table.
- * Handles invoice numbering, part payments, and cancellation.
- */
+function getActiveAcademicYear(db) {
+  return db.prepare('SELECT * FROM Academic_Years WHERE is_active = 1').get();
+}
 
 const PaymentModel = {
-  /**
-   * Get all payments for a student.
-   * @param {number} studentId
-   * @returns {Array<Object>}
-   */
-  getByStudent(studentId) {
+  getByEnrollment(enrollmentId) {
     const db = getDatabase();
     return db.prepare(`
-      SELECT * FROM Payments
-      WHERE student_id = ?
-      ORDER BY created_at DESC
-    `).all(studentId);
+      SELECT *
+      FROM Payments
+      WHERE enrollment_id = ?
+      ORDER BY id DESC
+    `).all(enrollmentId);
   },
 
-  /**
-   * Get a payment by ID.
-   * @param {number} id
-   * @returns {Object|undefined}
-   */
   getById(id) {
     const db = getDatabase();
     return db.prepare('SELECT * FROM Payments WHERE id = ?').get(id);
   },
 
-  /**
-   * Generate the next invoice number.
-   * Format: RK/{year_label}/{seq}
-   * @returns {string} e.g., "RK/26-27/001"
-   */
-  generateInvoiceNo() {
+  generateReceiptNo() {
     const db = getDatabase();
+    const activeYear = getActiveAcademicYear(db);
+    const yearLabel = activeYear?.year_label || 'XX-XX';
 
-    // Get active financial year
-    const activeYear = db.prepare(
-      'SELECT * FROM Financial_Years WHERE is_active = 1'
-    ).get();
-
-    const yearLabel = activeYear ? activeYear.year_label : 'XX-XX';
-
-    // Get the last invoice number for this year
     const prefix = `RK/${yearLabel}/`;
     const last = db.prepare(`
-      SELECT invoice_no FROM Payments
-      WHERE invoice_no LIKE ?
+      SELECT receipt_no
+      FROM Payments
+      WHERE receipt_no LIKE ?
       ORDER BY id DESC
       LIMIT 1
     `).get(`${prefix}%`);
 
     let nextSeq = 1;
-    if (last) {
-      const parts = last.invoice_no.split('/');
-      nextSeq = parseInt(parts[2], 10) + 1;
+    if (last?.receipt_no) {
+      const parts = last.receipt_no.split('/');
+      nextSeq = Number.parseInt(parts[2], 10) + 1;
     }
 
     return `${prefix}${String(nextSeq).padStart(3, '0')}`;
   },
 
-  /**
-   * Record a payment.
-   * @param {Object} data - { student_id, amount_paid, payment_mode, balance_remaining }
-   * @returns {Object} The newly created payment.
-   */
   create(data) {
     const db = getDatabase();
-    const { student_id, amount_paid, payment_mode, balance_remaining } = data;
+    const { enrollment_id, amount_paid, payment_mode } = data;
 
-    const invoice_no = this.generateInvoiceNo();
+    if (!enrollment_id) {
+      throw new Error('Enrollment is required to record payment.');
+    }
+
+    const receipt_no = this.generateReceiptNo();
 
     const result = db.prepare(`
-      INSERT INTO Payments (student_id, invoice_no, amount_paid, payment_mode, balance_remaining)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO Payments (enrollment_id, receipt_no, amount_paid, payment_mode)
+      VALUES (?, ?, ?, ?)
     `).run(
-      student_id,
-      invoice_no,
+      enrollment_id,
+      receipt_no,
       amount_paid,
       payment_mode || 'Cash',
-      balance_remaining || 0,
     );
 
     return this.getById(result.lastInsertRowid);
   },
 
-  /**
-   * Cancel a payment (invoices can never be deleted, only cancelled).
-   * @param {number} id
-   * @returns {Object} The cancelled payment.
-   */
   cancel(id) {
     const db = getDatabase();
     db.prepare("UPDATE Payments SET status = 'Cancelled' WHERE id = ?").run(id);
     return this.getById(id);
   },
 
-  /**
-   * Get the fee ledger for a student.
-   * @param {number} studentId
-   * @returns {{ total_fee: number, total_paid: number, balance: number, payments: Array }}
-   */
-  getLedger(studentId) {
+  getLedger(enrollmentId) {
     const db = getDatabase();
 
-    // Get student's class fee
-    const student = db.prepare(`
-      SELECT s.*, cm.base_fee
-      FROM Students s
-      LEFT JOIN Classes_Master cm ON s.class_id = cm.id
-      WHERE s.id = ?
-    `).get(studentId);
+    const enrollment = db.prepare(`
+      SELECT
+        se.*,
+        sm.usin,
+        sm.surname,
+        sm.student_name,
+        cm.class_name,
+        ay.year_label
+      FROM Student_Enrollments se
+      JOIN Students_Master sm ON se.student_id = sm.id
+      JOIN Classes_Master cm ON se.class_id = cm.id
+      JOIN Academic_Years ay ON se.academic_year_id = ay.id
+      WHERE se.id = ?
+    `).get(enrollmentId);
 
-    const totalFee = student ? (student.base_fee || 0) : 0;
+    if (!enrollment) {
+      return {
+        total_fee: 0,
+        total_paid: 0,
+        balance: 0,
+        payments: [],
+        enrollment: null,
+      };
+    }
 
-    // Sum active payments
     const paid = db.prepare(`
-      SELECT COALESCE(SUM(amount_paid), 0) as total_paid
+      SELECT COALESCE(SUM(amount_paid), 0) AS total_paid
       FROM Payments
-      WHERE student_id = ? AND status = 'Active'
-    `).get(studentId);
+      WHERE enrollment_id = ? AND status = 'Active'
+    `).get(enrollmentId);
 
-    const payments = this.getByStudent(studentId);
+    const payments = this.getByEnrollment(enrollmentId);
+
+    const totalFee = enrollment.agreed_annual_fee || 0;
+    const totalPaid = paid.total_paid || 0;
 
     return {
       total_fee: totalFee,
-      total_paid: paid.total_paid,
-      balance: totalFee - paid.total_paid,
+      total_paid: totalPaid,
+      balance: totalFee - totalPaid,
       payments,
+      enrollment,
     };
   },
 
-  /**
-   * Get today's collection stats for dashboard.
-   * @returns {{ today_collection: number, pending_total: number }}
-   */
   getStats() {
     const db = getDatabase();
 
     const today = db.prepare(`
-      SELECT COALESCE(SUM(amount_paid), 0) as total
+      SELECT COALESCE(SUM(amount_paid), 0) AS total
       FROM Payments
       WHERE payment_date = CURRENT_DATE AND status = 'Active'
     `).get();
 
     const pending = db.prepare(`
-      SELECT COALESCE(SUM(p.balance_remaining), 0) as total
-      FROM (
-        SELECT student_id, balance_remaining
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN se.agreed_annual_fee - COALESCE(p.total_paid, 0) > 0
+          THEN se.agreed_annual_fee - COALESCE(p.total_paid, 0)
+          ELSE 0
+        END
+      ), 0) AS total
+      FROM Student_Enrollments se
+      LEFT JOIN (
+        SELECT enrollment_id, SUM(amount_paid) AS total_paid
         FROM Payments
         WHERE status = 'Active'
-        AND id IN (SELECT MAX(id) FROM Payments WHERE status = 'Active' GROUP BY student_id)
-      ) p
+        GROUP BY enrollment_id
+      ) p ON p.enrollment_id = se.id
+      JOIN Students_Master sm ON sm.id = se.student_id
+      WHERE sm.status = 'Active'
     `).get();
 
     return {

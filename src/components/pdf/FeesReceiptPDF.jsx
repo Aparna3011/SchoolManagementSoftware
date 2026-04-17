@@ -26,11 +26,12 @@ const styles = StyleSheet.create({
   signLine: { borderTop: '1px solid #000', width: 150, paddingTop: 5, textAlign: 'center' }
 });
 
-export const FeesReceiptPDF = ({ payment, student, company }) => {
+export const FeesReceiptPDF = ({ payment, student, company, ledger }) => {
   return (
     <Document>
       <Page size="A5" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
+          {!!company?.group_name && <Text style={styles.subText}>{company.group_name}</Text>}
           <Text style={styles.companyName}>{company?.firm_name || 'School Name'}</Text>
           <Text style={styles.subText}>{company?.address || 'School Address'}</Text>
           <Text style={styles.subText}>Phone: {company?.phone || '-'} | Email: {company?.email || '-'}</Text>
@@ -41,11 +42,22 @@ export const FeesReceiptPDF = ({ payment, student, company }) => {
         <View style={styles.row}>
           <View style={styles.colHalf}>
             <Text style={styles.label}>Receipt No:</Text>
-            <Text style={styles.value}>{payment?.invoice_no}</Text>
+            <Text style={styles.value}>{payment?.receipt_no}</Text>
           </View>
           <View style={styles.colHalf}>
             <Text style={styles.label}>Date:</Text>
             <Text style={styles.value}>{payment?.payment_date ? new Date(payment.payment_date).toLocaleDateString() : ''}</Text>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.colHalf}>
+            <Text style={styles.label}>USIN:</Text>
+            <Text style={styles.value}>{student?.usin || '-'}</Text>
+          </View>
+          <View style={styles.colHalf}>
+            <Text style={styles.label}>Year:</Text>
+            <Text style={styles.value}>{student?.year_label || '-'}</Text>
           </View>
         </View>
 
@@ -71,7 +83,7 @@ export const FeesReceiptPDF = ({ payment, student, company }) => {
           </View>
           <View style={styles.totalRow}>
             <Text>Remaining Balance:</Text>
-            <Text>Rs. {(payment?.balance_left ?? payment?.balance_remaining ?? 0).toLocaleString('en-IN')}</Text>
+            <Text>Rs. {(ledger?.balance ?? 0).toLocaleString('en-IN')}</Text>
           </View>
         </View>
 

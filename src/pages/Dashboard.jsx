@@ -90,7 +90,7 @@ export default function Dashboard() {
   ];
 
   const recentColumns = [
-    { key: 'sr_no', label: 'Sr. No', width: '80px' },
+    { key: 'usin', label: 'USIN', width: '140px' },
     {
       key: 'student_name',
       label: 'Student Name',
@@ -134,7 +134,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-4 gap-6 mb-6">
         {statCards.map((stat) => (
           <div key={stat.label} className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 group">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${stat.color === 'primary' ? 'bg-indigo-50 text-indigo-600' : stat.color === 'success' ? 'bg-emerald-50 text-emerald-600' : stat.color === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${stat.color === 'primary' ? 'bg-indigo-50 text-indigo-600' : stat.color === 'success' ? 'bg-emerald-50 text-emerald-600' : stat.color === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
               <stat.icon size={24} className="group-hover:scale-110 transition-transform" />
             </div>
             <div className="flex-1">

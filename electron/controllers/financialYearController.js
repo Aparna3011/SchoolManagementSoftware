@@ -2,9 +2,9 @@ const FinancialYearModel = require('../models/financialYearModel');
 const { ipcMain } = require('electron');
 
 /**
- * Financial Year Controller
- * 
- * Registers IPC handlers for Financial Year operations.
+ * Academic Year Controller
+ *
+ * Registers IPC handlers for Academic Year operations.
  * Routes: financialYear:getAll, financialYear:getActive, financialYear:create,
  *         financialYear:update, financialYear:setActive, financialYear:delete
  */

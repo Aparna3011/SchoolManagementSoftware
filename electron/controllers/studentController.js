@@ -2,16 +2,17 @@ const StudentModel = require('../models/studentModel');
 const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { app } = require('electron');
+const { app, BrowserWindow } = require('electron');
+const { pathToFileURL } = require('url');
 
 /**
  * Student Controller
  * 
  * Registers IPC handlers for Student operations.
  * Includes photo handling (save to AppData).
- * Routes: student:getAll, student:getById, student:getNextSrNo,
+ * Routes: student:getAll, student:getById, student:generateUSIN,
  *         student:create, student:update, student:getStats, student:getRecent,
- *         student:savePhoto
+ *         student:savePhoto, student:printPdf
  */
 
 /**
@@ -25,6 +26,37 @@ function getPhotosDir() {
     fs.mkdirSync(photosDir, { recursive: true });
   }
   return photosDir;
+}
+
+function resolvePhotoPrefix(fileName = '') {
+  const normalized = fileName.toLowerCase();
+
+  if (normalized.startsWith('logo_secondary_')) {
+    return 'logo_secondary_';
+  }
+  if (normalized.startsWith('logo_')) {
+    return 'logo_';
+  }
+  if (normalized.startsWith('father_profile_')) {
+    return 'father_profile_';
+  }
+  if (normalized.startsWith('mother_profile_')) {
+    return 'mother_profile_';
+  }
+  if (normalized.startsWith('student_profile_')) {
+    return 'student_profile_';
+  }
+  if (normalized.startsWith('father_govt_proof_')) {
+    return 'father_govt_proof_';
+  }
+  if (normalized.startsWith('mother_govt_proof_')) {
+    return 'mother_govt_proof_';
+  }
+  if (normalized.startsWith('birth_certificate_')) {
+    return 'birth_certificate_';
+  }
+
+  return 'student_profile_';
 }
 
 function registerStudentHandlers() {
@@ -48,12 +80,12 @@ function registerStudentHandlers() {
     }
   });
 
-  ipcMain.handle('student:getNextSrNo', async () => {
+  ipcMain.handle('student:generateUSIN', async (_event, { academic_year_id, class_id }) => {
     try {
-      const srNo = StudentModel.getNextSrNo();
-      return { success: true, data: srNo };
+      const usin = StudentModel.generateUSIN(academic_year_id, class_id);
+      return { success: true, data: usin };
     } catch (error) {
-      console.error('[StudentController] getNextSrNo error:', error);
+      console.error('[StudentController] generateUSIN error:', error);
       return { success: false, error: error.message };
     }
   });
@@ -106,8 +138,7 @@ function registerStudentHandlers() {
     try {
       const photosDir = getPhotosDir();
       const ext = path.extname(fileName) || '.jpg';
-      const isLogo = fileName && fileName.startsWith('logo_');
-      const prefix = isLogo ? 'logo_' : 'student_';
+      const prefix = resolvePhotoPrefix(fileName);
       const safeName = `${prefix}${Date.now()}${ext}`;
       const filePath = path.join(photosDir, safeName);
 
@@ -139,6 +170,99 @@ function registerStudentHandlers() {
     } catch (error) {
       console.error('[StudentController] getPhoto error:', error);
       return { success: false, error: error.message };
+    }
+  });
+
+  /**
+   * Print a PDF (base64) directly to the default printer.
+   */
+  ipcMain.handle('student:printPdf', async (_event, { base64Pdf }) => {
+    let printWindow = null;
+    let tempFilePath = null;
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const withTimeout = (promise, ms, timeoutMessage) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(timeoutMessage)), ms);
+        }),
+      ]);
+
+    try {
+      if (!base64Pdf) {
+        throw new Error('No PDF data provided for printing.');
+      }
+
+      const tempDir = app.getPath('temp');
+      tempFilePath = path.join(tempDir, `admission_${Date.now()}.pdf`);
+      fs.writeFileSync(tempFilePath, Buffer.from(base64Pdf, 'base64'));
+
+      printWindow = new BrowserWindow({
+        width: 1200,
+        height: 1600,
+        show: false,
+        webPreferences: {
+          plugins: true,
+          sandbox: false,
+        },
+      });
+
+      const fileUrl = pathToFileURL(tempFilePath).toString();
+      await withTimeout(
+        printWindow.loadURL(fileUrl),
+        8000,
+        'Timed out while loading PDF into print window.',
+      );
+
+      // Give Chromium PDF viewer time to fully rasterize the first page.
+      await wait(1800);
+
+      const printWithOptions = (silent) =>
+        withTimeout(
+          new Promise((resolve, reject) => {
+            printWindow.webContents.print(
+              { silent, printBackground: true },
+              (success, failureReason) => {
+                if (!success) {
+                  reject(new Error(failureReason || 'Failed to print PDF.'));
+                  return;
+                }
+                resolve(true);
+              },
+            );
+          }),
+          10000,
+          silent
+            ? 'Timed out while sending silent print job to default printer.'
+            : 'Timed out while opening print dialog.',
+        );
+
+      try {
+        await printWithOptions(true);
+      } catch (silentError) {
+        console.warn('[StudentController] Silent print failed, opening print dialog fallback:', silentError.message);
+        if (!printWindow.isVisible()) {
+          printWindow.show();
+        }
+        await printWithOptions(false);
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('[StudentController] printPdf error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      if (printWindow && !printWindow.isDestroyed()) {
+        printWindow.close();
+      }
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (_error) {
+          // Best-effort temp file cleanup.
+        }
+      }
     }
   });
 }

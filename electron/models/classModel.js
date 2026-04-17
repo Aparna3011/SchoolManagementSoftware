@@ -8,29 +8,12 @@ const { getDatabase } = require('../database/connection');
 
 const ClassModel = {
   /**
-   * Get all classes, optionally filtered by year.
-   * @param {number} [yearId] - Filter by financial year ID.
+   * Get all classes.
    * @returns {Array<Object>}
    */
-  getAll(yearId) {
+  getAll() {
     const db = getDatabase();
-
-    if (yearId) {
-      return db.prepare(`
-        SELECT c.*, fy.year_label
-        FROM Classes_Master c
-        LEFT JOIN Financial_Years fy ON c.year_id = fy.id
-        WHERE c.year_id = ?
-        ORDER BY c.class_name ASC
-      `).all(yearId);
-    }
-
-    return db.prepare(`
-      SELECT c.*, fy.year_label
-      FROM Classes_Master c
-      LEFT JOIN Financial_Years fy ON c.year_id = fy.id
-      ORDER BY c.class_name ASC
-    `).all();
+    return db.prepare('SELECT * FROM Classes_Master ORDER BY class_name ASC').all();
   },
 
   /**
@@ -40,27 +23,29 @@ const ClassModel = {
    */
   getById(id) {
     const db = getDatabase();
-    return db.prepare(`
-      SELECT c.*, fy.year_label
-      FROM Classes_Master c
-      LEFT JOIN Financial_Years fy ON c.year_id = fy.id
-      WHERE c.id = ?
-    `).get(id);
+    return db.prepare('SELECT * FROM Classes_Master WHERE id = ?').get(id);
   },
 
   /**
    * Create a new class.
-   * @param {Object} data - { class_name, session_time, base_fee, year_id }
+   * @param {Object} data - { class_name, short_code, base_fee }
    * @returns {Object} The newly created row.
    */
   create(data) {
     const db = getDatabase();
-    const { class_name, session_time, base_fee, year_id } = data;
+    const { class_name, short_code, base_fee } = data;
+
+    if (!class_name?.trim()) {
+      throw new Error('Class name is required.');
+    }
+    if (!short_code?.trim()) {
+      throw new Error('Class short code is required.');
+    }
 
     const result = db.prepare(`
-      INSERT INTO Classes_Master (class_name, session_time, base_fee, year_id)
-      VALUES (?, ?, ?, ?)
-    `).run(class_name, session_time || '', base_fee || 0, year_id);
+      INSERT INTO Classes_Master (class_name, short_code, base_fee)
+      VALUES (?, ?, ?)
+    `).run(class_name.trim(), short_code.trim().toUpperCase(), base_fee || 0);
 
     return this.getById(result.lastInsertRowid);
   },
@@ -73,17 +58,22 @@ const ClassModel = {
    */
   update(id, data) {
     const db = getDatabase();
-    const { class_name, session_time, base_fee, year_id, is_active } = data;
+    const { class_name, short_code, base_fee, is_active } = data;
 
     db.prepare(`
       UPDATE Classes_Master
       SET class_name = COALESCE(?, class_name),
-          session_time = COALESCE(?, session_time),
+          short_code = COALESCE(?, short_code),
           base_fee = COALESCE(?, base_fee),
-          year_id = COALESCE(?, year_id),
           is_active = COALESCE(?, is_active)
       WHERE id = ?
-    `).run(class_name, session_time, base_fee, year_id, is_active, id);
+    `).run(
+      class_name ? class_name.trim() : null,
+      short_code ? short_code.trim().toUpperCase() : null,
+      base_fee,
+      is_active,
+      id,
+    );
 
     return this.getById(id);
   },
@@ -96,11 +86,11 @@ const ClassModel = {
   delete(id) {
     const db = getDatabase();
 
-    const studentCount = db.prepare(
-      'SELECT COUNT(*) as count FROM Students WHERE class_id = ?'
+    const enrollmentCount = db.prepare(
+      'SELECT COUNT(*) as count FROM Student_Enrollments WHERE class_id = ?'
     ).get(id);
 
-    if (studentCount.count > 0) {
+    if (enrollmentCount.count > 0) {
       return { success: false, message: 'Cannot delete: students are enrolled in this class.' };
     }
 

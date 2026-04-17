@@ -5,17 +5,17 @@ const { ipcMain } = require('electron');
  * Payment Controller
  * 
  * Registers IPC handlers for Payment operations.
- * Routes: payment:getByStudent, payment:create, payment:cancel,
- *         payment:getLedger, payment:getStats, payment:generateInvoiceNo
+ * Routes: payment:getByEnrollment, payment:create, payment:cancel,
+ *         payment:getLedger, payment:getStats, payment:generateReceiptNo
  */
 
 function registerPaymentHandlers() {
-  ipcMain.handle('payment:getByStudent', async (_event, studentId) => {
+  ipcMain.handle('payment:getByEnrollment', async (_event, enrollmentId) => {
     try {
-      const payments = PaymentModel.getByStudent(studentId);
+      const payments = PaymentModel.getByEnrollment(enrollmentId);
       return { success: true, data: payments };
     } catch (error) {
-      console.error('[PaymentController] getByStudent error:', error);
+      console.error('[PaymentController] getByEnrollment error:', error);
       return { success: false, error: error.message };
     }
   });
@@ -40,9 +40,9 @@ function registerPaymentHandlers() {
     }
   });
 
-  ipcMain.handle('payment:getLedger', async (_event, studentId) => {
+  ipcMain.handle('payment:getLedger', async (_event, enrollmentId) => {
     try {
-      const ledger = PaymentModel.getLedger(studentId);
+      const ledger = PaymentModel.getLedger(enrollmentId);
       return { success: true, data: ledger };
     } catch (error) {
       console.error('[PaymentController] getLedger error:', error);
@@ -60,12 +60,12 @@ function registerPaymentHandlers() {
     }
   });
 
-  ipcMain.handle('payment:generateInvoiceNo', async () => {
+  ipcMain.handle('payment:generateReceiptNo', async () => {
     try {
-      const invoiceNo = PaymentModel.generateInvoiceNo();
-      return { success: true, data: invoiceNo };
+      const receiptNo = PaymentModel.generateReceiptNo();
+      return { success: true, data: receiptNo };
     } catch (error) {
-      console.error('[PaymentController] generateInvoiceNo error:', error);
+      console.error('[PaymentController] generateReceiptNo error:', error);
       return { success: false, error: error.message };
     }
   });
