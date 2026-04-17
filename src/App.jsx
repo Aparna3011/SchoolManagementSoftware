@@ -5,6 +5,8 @@ import Registration from './pages/Registration';
 import Fees from './pages/Fees';
 import MasterSettings from './pages/MasterSettings';
 import CompanyProfile from './pages/CompanyProfile';
+import Attendance from './pages/Attendance';
+import AppToaster from "./components/ui/AppToaster";
 
 /**
  * App Root Component
@@ -16,6 +18,7 @@ import CompanyProfile from './pages/CompanyProfile';
 export default function App() {
   return (
     <HashRouter>
+     <AppToaster />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
@@ -23,6 +26,7 @@ export default function App() {
           <Route path="/fees" element={<Fees />} />
           <Route path="/master-settings" element={<MasterSettings />} />
           <Route path="/company-profile" element={<CompanyProfile />} />
+          <Route path="/attendance" element={<Attendance />} />
         </Route>
       </Routes>
     </HashRouter>

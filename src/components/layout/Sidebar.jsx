@@ -5,6 +5,7 @@ import {
   IndianRupee,
   Settings,
   Building2,
+  CalendarCheck,
 } from 'lucide-react';
 
 /**
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/registration', label: 'Registration', icon: UserPlus },
   { to: '/fees', label: 'Fees', icon: IndianRupee },
   { to: '/master-settings', label: 'Master Settings', icon: Settings },
+  { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
   { to: '/company-profile', label: 'Company Profile', icon: Building2 },
 ];
 
