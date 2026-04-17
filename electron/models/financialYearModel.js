@@ -7,6 +7,43 @@ const { getDatabase } = require('../database/connection');
  */
 
 const FinancialYearModel = {
+  normalizeYearPayload(data) {
+    const yearLabel = data.year_label?.trim();
+    const startDate = data.start_date?.trim() || null;
+    const endDate = data.end_date?.trim() || null;
+
+    let parsedStartYear = null;
+    if (data.start_year !== undefined && data.start_year !== null && data.start_year !== '') {
+      parsedStartYear = Number.parseInt(data.start_year, 10);
+    } else if (startDate) {
+      parsedStartYear = Number.parseInt(startDate.slice(0, 4), 10);
+    }
+
+    if (!yearLabel) {
+      throw new Error('Year label is required.');
+    }
+    if (!startDate) {
+      throw new Error('Start date is required.');
+    }
+    if (!endDate) {
+      throw new Error('End date is required.');
+    }
+    if (!Number.isInteger(parsedStartYear)) {
+      throw new Error('Start year is required.');
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error('End date must be after start date.');
+    }
+
+    return {
+      year_label: yearLabel,
+      start_year: parsedStartYear,
+      start_date: startDate,
+      end_date: endDate,
+      is_active: !!data.is_active,
+    };
+  },
+
   /**
    * Get all academic years ordered by ID descending.
    * @returns {Array<Object>}
@@ -42,24 +79,23 @@ const FinancialYearModel = {
    */
   create(data) {
     const db = getDatabase();
-    const { year_label, start_year, is_active } = data;
-
-    if (!year_label) {
-      throw new Error('Year label is required.');
-    }
-    if (!start_year) {
-      throw new Error('Start year is required.');
-    }
+    const payload = this.normalizeYearPayload(data);
 
     // If setting as active, deactivate all others first
-    if (is_active) {
+    if (payload.is_active) {
       db.prepare('UPDATE Academic_Years SET is_active = 0').run();
     }
 
     const result = db.prepare(`
-      INSERT INTO Academic_Years (year_label, start_year, is_active)
-      VALUES (?, ?, ?)
-    `).run(year_label, Number.parseInt(start_year, 10), is_active ? 1 : 0);
+      INSERT INTO Academic_Years (year_label, start_year, start_date, end_date, is_active)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      payload.year_label,
+      payload.start_year,
+      payload.start_date,
+      payload.end_date,
+      payload.is_active ? 1 : 0,
+    );
 
     return this.getById(result.lastInsertRowid);
   },
@@ -72,23 +108,40 @@ const FinancialYearModel = {
    */
   update(id, data) {
     const db = getDatabase();
-    const { year_label, start_year, is_active } = data;
+    const current = this.getById(id);
+    if (!current) {
+      throw new Error('Academic year not found.');
+    }
+
+    const merged = {
+      year_label: data.year_label ?? current.year_label,
+      start_year: data.start_year ?? current.start_year,
+      start_date: data.start_date ?? current.start_date,
+      end_date: data.end_date ?? current.end_date,
+      is_active: data.is_active !== undefined ? data.is_active : !!current.is_active,
+    };
+
+    const payload = this.normalizeYearPayload(merged);
 
     // If setting as active, deactivate all others first
-    if (is_active) {
+    if (payload.is_active) {
       db.prepare('UPDATE Academic_Years SET is_active = 0').run();
     }
 
     db.prepare(`
       UPDATE Academic_Years
-      SET year_label = COALESCE(?, year_label),
-          start_year = COALESCE(?, start_year),
-          is_active = COALESCE(?, is_active)
+      SET year_label = ?,
+          start_year = ?,
+          start_date = ?,
+          end_date = ?,
+          is_active = ?
       WHERE id = ?
     `).run(
-      year_label,
-      start_year !== undefined && start_year !== '' ? Number.parseInt(start_year, 10) : null,
-      is_active !== undefined ? (is_active ? 1 : 0) : null,
+      payload.year_label,
+      payload.start_year,
+      payload.start_date,
+      payload.end_date,
+      payload.is_active ? 1 : 0,
       id,
     );
 
