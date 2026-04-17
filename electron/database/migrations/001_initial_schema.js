@@ -48,6 +48,8 @@ function up(db) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       year_label TEXT NOT NULL UNIQUE, -- e.g., '2026-2027'
       start_year INTEGER NOT NULL,     -- e.g., 2026 (Used for USIN)
+      start_date DATE ,     
+      end_date DATE ,      
       is_active INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
