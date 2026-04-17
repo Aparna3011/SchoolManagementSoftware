@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     width: '50%',
     height: '100%',
     paddingHorizontal: 18,
-
+    justifyContent:'center',
     paddingTop: 14,
     paddingBottom: 12,
   },
@@ -48,14 +48,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 44,
-    height: 44,
+    width: 55,
+    // border:'1px solid #000',
+    height: 55,
     objectFit: 'contain',
   },
   centerHeader: {
     flex: 1,
     paddingHorizontal: 6,
-    alignItems: 'center',
+    alignItems: 'left',
   },
   groupName: {
     fontSize: 9,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   companyName: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 2,
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   companyMeta: {
     fontSize: 8.5,
     color: '#000',
-    textAlign: 'center',
+    // textAlign: 'center',
     marginTop: 1,
   },
 
@@ -236,8 +237,11 @@ const styles = StyleSheet.create({
   },
 
   signatureRow: {
-    marginTop: 30,
+    paddingTop: 80,
+     paddingBottom: 15,
     flexDirection: 'row',
+     borderWidth: 1,
+    borderColor: '#000',
     justifyContent: 'space-between',
     gap: 8,
   },
@@ -308,11 +312,11 @@ function ReceiptCopy({ payment, student, company, ledger, copy }) {
         <Text>Fee Receipt</Text>
         <Text>{copy === 1 ? 'Office Copy' : 'Student Copy'}</Text>
       </View>
-      <View style={{ border: '1px solid #000', paddingBottom: 15 }}>
+      <View style={{ border: '1px solid #000' }}>
 
         <View style={styles.headerWrap}>
           <View style={styles.headerRow}>
-            {company?.logo_base64_secondary ? <Image src={company.logo_base64_secondary} style={styles.logo} /> : <View style={styles.logo} />}
+            {/* {company?.logo_base64_secondary ? <Image src={company.logo_base64_secondary} style={styles.logo} /> : <View style={styles.logo} />} */}
 
             <View style={styles.centerHeader}>
               {!!company?.group_name && <Text style={styles.groupName}>{company.group_name}</Text>}
@@ -421,10 +425,10 @@ function ReceiptCopy({ payment, student, company, ledger, copy }) {
         </View>
 
         <View style={styles.signatureRow}>
-          <View style={styles.sigBlock}>
+          {/* <View style={styles.sigBlock}>
             <View style={styles.sigLine} />
             <Text style={styles.sigText}>Staff Sign</Text>
-          </View>
+          </View> */}
           <View style={styles.sigBlock}>
             <View style={styles.sigLine} />
             <Text style={styles.sigText}>Parent Sign</Text>

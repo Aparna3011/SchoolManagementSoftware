@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { Table } from '../components/ui/Table';
 import { Modal } from '../components/ui/Modal';
 import { FeesReceiptPDF } from '../components/pdf/FeesReceiptPDF';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 
 export default function Fees() {
   const { execute, loading } = useDatabase();
@@ -18,6 +19,10 @@ export default function Fees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [students, setStudents] = useState([]);
   const [searched, setSearched] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelPaymentId, setCancelPaymentId] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [ledger, setLedger] = useState(null);
@@ -72,6 +77,24 @@ export default function Fees() {
     }
   }
 
+  function requestCancelPayment(paymentId) {
+    setCancelPaymentId(paymentId);
+    setConfirmOpen(true);
+  }
+
+  async function confirmCancelPayment() {
+    if (!cancelPaymentId || !selectedStudent?.enrollment_id) return;
+
+    try {
+      setCancelLoading(true);
+      await execute(() => window.api.payment.cancel(cancelPaymentId));
+      await loadLedger(selectedStudent.enrollment_id);
+    } finally {
+      setCancelLoading(false);
+      setConfirmOpen(false);
+      setCancelPaymentId(null);
+    }
+  }
   async function selectStudent(student) {
     setSelectedStudent(student);
     clearPreview();
@@ -81,6 +104,7 @@ export default function Fees() {
   async function loadLedger(enrollmentId) {
     if (!enrollmentId) return;
     const data = await execute(() => window.api.payment.getLedger(enrollmentId));
+    console.log('Ledger data loaded:', data);
     if (data) setLedger(data);
   }
 
@@ -121,7 +145,7 @@ export default function Fees() {
 
   async function handlePreviewReceipt(paymentRow) {
 
-    console.log('Generating preview for payment:', companyProfile);
+    console.log('Generating preview for payment:', paymentRow);
     if (!isDevMode || !paymentRow || !selectedStudent) return;
 
     try {
@@ -200,7 +224,7 @@ export default function Fees() {
               </Button>
             )}
 
-            <Button variant="ghost" size="sm" onClick={() => handleCancelPayment(row.id)} title="Cancel Receipt">
+            <Button variant="ghost" size="sm" onClick={() => requestCancelPayment(row.id)} title="Cancel Receipt">
               <XCircle size={14} />
             </Button>
           </div>
@@ -459,6 +483,21 @@ export default function Fees() {
           />
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title="Cancel Receipt?"
+        message="Are you sure you want to cancel this receipt? This action cannot be undone."
+        confirmText="Yes, Cancel Receipt"
+        cancelText="Keep Receipt"
+        confirmVariant="danger"
+        loading={cancelLoading}
+        onCancel={() => {
+          if (cancelLoading) return;
+          setConfirmOpen(false);
+          setCancelPaymentId(null);
+        }}
+        onConfirm={confirmCancelPayment}
+      />
     </div>
   );
 }
