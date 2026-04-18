@@ -28,53 +28,58 @@ export default function Attendance() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [view, setView] = useState("classes");
 
-  const [attendance, setAttendance] = useState({});
+  // const [attendance, setAttendance] = useState({});
   const [saved, setSaved] = useState(false);
 
   async function loadData() {
     if (!selectedClass) return;
 
-    const students = await execute(() =>
-      window.api.student.getAll({
-        class_id: selectedClass,
-      }),
-    );
+    // const students = await execute(() =>
+    //   window.api.student.getAll({
+    //     class_id: selectedClass,
+    //   }),
+    // );
 
-    if (!students) return;
+    // if (!students) return;
 
-    setStudents(students);
+    // setStudents(students);
 
-    const att = await execute(() =>
+    const res = await execute(() =>
       window.api.attendance.getByFilters({
         date,
+        //academic year add kr
         classId: Number(selectedClass),
+        academicYearId: selectedYear?.id,
       }),
     );
+    console.log("Attendance Response:", res);
+    console.log("Selected Year ID:", selectedYear?.id);
 
-    if (!att) return;
+    if (!res) return;
 
-    const map = {};
+    // ⚠️ depends on your execute()
+    setStudents(res);
 
-    att.forEach((a) => {
-      map[a.enrollment_id] = {
-        status: a.status,
-      };
-    });
+    // const map = {};
 
-    setAttendance(map);
+    // att.forEach((a) => {
+    //   map[a.enrollment_id] = {
+    //     status: a.status,
+    //   };
+    // });
+
+    // setAttendance(map);
   }
 
   // =========================
   // HANDLE STATUS
   // =========================
   function handleStatus(id, status) {
-    setAttendance((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        status,
-      },
-    }));
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.enrollment_id === id ? { ...s, attendance_status: status } : s,
+      ),
+    );
   }
 
   // =========================
@@ -89,7 +94,7 @@ export default function Attendance() {
     const payload = students.map((s) => ({
       enrollment_id: s.enrollment_id,
       attendance_date: date,
-      status: attendance[s.enrollment_id]?.status || "Absent",
+      status: s.attendance_status || "Absent",
     }));
 
     console.log("Payload:", payload);
@@ -109,11 +114,12 @@ export default function Attendance() {
   // MARK ALL PRESENT
   // =========================
   function markAllPresent() {
-    const updated = {};
-    students.forEach((s) => {
-      updated[s.enrollment_id] = { status: "Present" };
-    });
-    setAttendance(updated);
+    setStudents((prev) =>
+      prev.map((s) => ({
+        ...s,
+        attendance_status: "Present",
+      })),
+    );
   }
 
   //Classes
@@ -166,6 +172,7 @@ export default function Attendance() {
   }, []);
 
   const [isEditing, setIsEditing] = useState(false);
+  console.log("data in students", students);
 
   return (
     <div>
@@ -230,16 +237,6 @@ export default function Attendance() {
         />
       </div>
 
-      {/* <div className="flex gap-4 mb-4">
-        <Input
-          type="date"
-          value={date}
-          min={academicYear?.start_date}
-          max={academicYear?.end_date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </div> */}
-
       {/* STUDENT VIEW */}
       {view === "students" && (
         <>
@@ -268,16 +265,13 @@ export default function Attendance() {
                 </thead>
 
                 <tbody>
-                  {students.map((s) => (
+                  {students?.map((s) => (
                     <tr key={s.enrollment_id}>
                       {/* Present Checkbox */}
                       <td className="p-2 border text-center">
                         <input
                           type="checkbox"
-                          // disabled={!isEditing}
-                          checked={
-                            attendance[s.enrollment_id]?.status === "Present"
-                          }
+                          checked={s.attendance_status === "Present"}
                           onChange={(e) =>
                             handleStatus(
                               s.enrollment_id,
