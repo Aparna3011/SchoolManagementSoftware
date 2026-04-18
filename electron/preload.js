@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('api', {
     savePhoto: (base64Data, fileName) =>
       ipcRenderer.invoke('student:savePhoto', { base64Data, fileName }),
     getPhoto: (photoPath) => ipcRenderer.invoke('student:getPhoto', photoPath),
+    deletePhoto: (photoPath) => ipcRenderer.invoke('student:deletePhoto', photoPath),
     printPdf: (base64Pdf) => ipcRenderer.invoke('student:printPdf', { base64Pdf }),
   },
 

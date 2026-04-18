@@ -204,6 +204,36 @@ function registerStudentHandlers() {
   });
 
   /**
+   * Delete a photo from AppData/Photos directory.
+   * Only files inside the managed photos directory are allowed.
+   */
+  ipcMain.handle('student:deletePhoto', async (_event, photoPath) => {
+    try {
+      if (!photoPath) {
+        return { success: true, data: false };
+      }
+
+      const photosDir = getPhotosDir();
+      const normalizedPhotoPath = path.normalize(photoPath);
+      const normalizedPhotosDir = path.normalize(photosDir + path.sep);
+
+      if (!normalizedPhotoPath.startsWith(normalizedPhotosDir)) {
+        throw new Error('Invalid photo path for deletion.');
+      }
+
+      if (!fs.existsSync(normalizedPhotoPath)) {
+        return { success: true, data: false };
+      }
+
+      fs.unlinkSync(normalizedPhotoPath);
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('[StudentController] deletePhoto error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  /**
    * Print a PDF (base64) directly to the default printer.
    */
   ipcMain.handle('student:printPdf', async (_event, { base64Pdf }) => {
