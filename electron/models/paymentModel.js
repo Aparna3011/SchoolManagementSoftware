@@ -137,6 +137,28 @@ const PaymentModel = {
       WHERE payment_date = CURRENT_DATE AND status = 'Active'
     `).get();
 
+    const pendingByStatus = db.prepare(`
+      SELECT
+        sm.status,
+        COALESCE(SUM(
+          CASE
+            WHEN se.agreed_annual_fee - COALESCE(p.total_paid, 0) > 0
+            THEN se.agreed_annual_fee - COALESCE(p.total_paid, 0)
+            ELSE 0
+          END
+        ), 0) AS total
+      FROM Student_Enrollments se
+      LEFT JOIN (
+        SELECT enrollment_id, SUM(amount_paid) AS total_paid
+        FROM Payments
+        WHERE status = 'Active'
+        GROUP BY enrollment_id
+      ) p ON p.enrollment_id = se.id
+      JOIN Students_Master sm ON sm.id = se.student_id
+      WHERE sm.status IN ('Active', 'Alumni')
+      GROUP BY sm.status
+    `).all();
+
     const pending = db.prepare(`
       SELECT COALESCE(SUM(
         CASE
@@ -156,9 +178,20 @@ const PaymentModel = {
       WHERE sm.status = 'Active'
     `).get();
 
+    const statusMap = pendingByStatus.reduce((acc, row) => {
+      acc[row.status] = row.total;
+      return acc;
+    }, {});
+
+    const pendingActiveTotal = statusMap.Active || 0;
+    const pendingAlumniTotal = statusMap.Alumni || 0;
+
     return {
       today_collection: today.total,
       pending_total: pending.total,
+      pending_active_total: pendingActiveTotal,
+      pending_alumni_total: pendingAlumniTotal,
+      pending_combined_total: pendingActiveTotal + pendingAlumniTotal,
     };
   },
 };

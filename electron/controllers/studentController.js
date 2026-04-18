@@ -80,6 +80,26 @@ function registerStudentHandlers() {
     }
   });
 
+  ipcMain.handle('student:getEnrollments', async (_event, studentId) => {
+    try {
+      const enrollments = StudentModel.getEnrollments(studentId);
+      return { success: true, data: enrollments };
+    } catch (error) {
+      console.error('[StudentController] getEnrollments error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('student:getFeesSummaryByYear', async (_event, studentId) => {
+    try {
+      const summary = StudentModel.getFeesSummaryByYear(studentId);
+      return { success: true, data: summary };
+    } catch (error) {
+      console.error('[StudentController] getFeesSummaryByYear error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('student:generateUSIN', async (_event, { academic_year_id, class_id }) => {
     try {
       const usin = StudentModel.generateUSIN(academic_year_id, class_id);
@@ -106,6 +126,16 @@ function registerStudentHandlers() {
       return { success: true, data: updated };
     } catch (error) {
       console.error('[StudentController] update error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('student:updateStatus', async (_event, { id, status }) => {
+    try {
+      const updated = StudentModel.updateStatus(id, status);
+      return { success: true, data: updated };
+    } catch (error) {
+      console.error('[StudentController] updateStatus error:', error);
       return { success: false, error: error.message };
     }
   });

@@ -40,10 +40,13 @@ contextBridge.exposeInMainWorld('api', {
   student: {
     getAll: (filters) => ipcRenderer.invoke('student:getAll', filters),
     getById: (id) => ipcRenderer.invoke('student:getById', id),
+    getEnrollments: (studentId) => ipcRenderer.invoke('student:getEnrollments', studentId),
+    getFeesSummaryByYear: (studentId) => ipcRenderer.invoke('student:getFeesSummaryByYear', studentId),
     generateUSIN: (academic_year_id, class_id) =>
       ipcRenderer.invoke('student:generateUSIN', { academic_year_id, class_id }),
     create: (data) => ipcRenderer.invoke('student:create', data),
     update: (id, data) => ipcRenderer.invoke('student:update', { id, data }),
+    updateStatus: (id, status) => ipcRenderer.invoke('student:updateStatus', { id, status }),
     getStats: () => ipcRenderer.invoke('student:getStats'),
     getRecent: (limit) => ipcRenderer.invoke('student:getRecent', limit),
     savePhoto: (base64Data, fileName) =>

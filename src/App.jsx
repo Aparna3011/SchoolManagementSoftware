@@ -6,6 +6,7 @@ import Fees from './pages/Fees';
 import MasterSettings from './pages/MasterSettings';
 import CompanyProfile from './pages/CompanyProfile';
 import Students from './pages/Students';
+import StudentDetail from './pages/StudentDetail';
 
 /**
  * App Root Component
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/master-settings" element={<MasterSettings />} />
           <Route path="/company-profile" element={<CompanyProfile />} />
           <Route path="/students" element={<Students />} />
+          <Route path="/students/:studentId" element={<StudentDetail />} />
         </Route>
       </Routes>
     </HashRouter>
