@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Save } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
+import { toast } from "react-toastify";
 import {
   Card,
   CardHeader,
@@ -10,10 +11,16 @@ import {
 } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { showError, showSuccess } from "../utils/toast";
+// import { toast.error, toast.error } from "../utils/toast";
 
 export default function Attendance() {
   const { execute, loading } = useDatabase();
+
+  const [academicYear, setAcademicYear] = useState(null);
+  const [date, setDate] = useState(() =>
+    new Date().toLocaleDateString("en-CA"),
+  );
+  const getToday = () => new Date().toISOString().split("T")[0];
 
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -21,63 +28,36 @@ export default function Attendance() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [view, setView] = useState("classes");
 
-  const [date, setDate] = useState(() =>
-    new Date().toLocaleDateString("en-CA"),
-  );
-
   const [attendance, setAttendance] = useState({});
   const [saved, setSaved] = useState(false);
 
-  // =========================
-  // LOAD CLASSES
-  // =========================
-  useEffect(() => {
-    loadClasses();
-  }, []);
+  async function loadData() {
+    if (!selectedClass) return;
 
-  async function loadClasses() {
-    const res = await execute(() => window.api.class.getAll());
-    setClasses(res || []);
-  }
+    const students = await execute(() =>
+      window.api.student.getAll({
+        class_id: selectedClass,
+      }),
+    );
 
-  // =========================
-  // CLICK CLASS → LOAD STUDENTS
-  // =========================
-  async function handleClassClick(classId) {
-    if (!classId) return;
+    if (!students) return;
 
-    setView("students");
+    setStudents(students);
 
-   const res = await execute(() =>
-  window.api.student.getAll({
-    classId: classId,
-  })
-);
+    const att = await execute(() =>
+      window.api.attendance.getByFilters({
+        date,
+        classId: Number(selectedClass),
+      }),
+    );
 
-console.log("Students:", res);
-
-if (!res) {
-  showError("Failed to load students");
-  return;
-}
-
-setStudents(res);
-
-    setStudents(res.data || []);
-
-    // Load attendance
-    const attRes = await execute(() => window.api.attendance.getByDate(date));
-
-    if (!attRes.success) {
-      showError(attRes.error);
-      return;
-    }
+    if (!att) return;
 
     const map = {};
-    attRes.data.forEach((a) => {
+
+    att.forEach((a) => {
       map[a.enrollment_id] = {
         status: a.status,
-        note: a.note,
       };
     });
 
@@ -102,7 +82,7 @@ setStudents(res);
   // =========================
   async function handleSave() {
     if (!students.length) {
-      showError("No students found");
+      toast.error("No students found");
       return;
     }
 
@@ -112,16 +92,19 @@ setStudents(res);
       status: attendance[s.enrollment_id]?.status || "Absent",
     }));
 
-    const res = await execute(() => window.api.attendance.saveBulk(payload));
+    console.log("Payload:", payload);
 
-    if (!res.success) {
-      showError(res.error);
+    const res = await window.api.attendance.saveBulk(payload);
+
+    console.log("Response:", res);
+
+    if (!res || !res.success) {
+      toast.error(res?.error || "Failed to save attendance");
       return;
     }
 
-    showSuccess("Attendance saved successfully");
+    toast.success("Attendance saved successfully");
   }
-
   // =========================
   // MARK ALL PRESENT
   // =========================
@@ -132,11 +115,57 @@ setStudents(res);
     });
     setAttendance(updated);
   }
+
+  //Classes
+  useEffect(() => {
+    async function loadClasses() {
+      const data = await execute(() => window.api.class.getAll());
+
+      if (!data) return;
+
+      setClasses(data);
+    }
+
+    loadClasses();
+  }, []);
+
   useEffect(() => {
     if (!selectedClass) return;
 
-    handleClassClick(selectedClass);
-  }, [selectedClass]);
+    setView("students");
+    loadData();
+  }, [selectedClass, date]);
+
+  const [years, setYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+
+  useEffect(() => {
+    async function loadYears() {
+      const all = await execute(() => window.api.financialYear.getAll());
+
+      const active = await execute(() => window.api.financialYear.getActive());
+
+      if (!all) return;
+
+      setYears(all);
+
+      if (active) {
+        setSelectedYear(active);
+
+        const today = getToday();
+
+        if (today >= active.start_date && today <= active.end_date) {
+          setDate(today);
+        } else {
+          setDate(active.start_date);
+        }
+      }
+    }
+
+    loadYears();
+  }, []);
+
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div>
@@ -145,11 +174,9 @@ setStudents(res);
         <h1 className="text-2xl font-bold">Student Attendance</h1>
       </div>
 
-      {/* =========================
-          CLASS VIEW
-      ========================= */}
-      <select
-        className="border p-2 rounded"
+      {/* CLASS DROPDOWN */}
+      {/* <select
+        className="border p-2 rounded mb-4"
         value={selectedClass || ""}
         onChange={(e) => setSelectedClass(e.target.value)}
       >
@@ -159,24 +186,66 @@ setStudents(res);
             {c.class_name}
           </option>
         ))}
-      </select>
+      </select> */}
+      <div className="flex gap-4 items-center mb-6">
+        {/* Academic Year (Financial Year) */}
+        <select
+          className="border p-2 rounded"
+          value={selectedYear?.id || ""}
+          onChange={(e) => {
+            const year = years.find((y) => y.id == e.target.value);
+            setSelectedYear(year);
+            setDate(year.start_date);
+          }}
+        >
+          <option value="">Select Year</option>
+          {years.map((y) => (
+            <option key={y.id} value={y.id}>
+              {y.year_label}
+            </option>
+          ))}
+        </select>
 
-      {/* =========================
-          STUDENT VIEW
-      ========================= */}
+        {/* Class */}
+        <select
+          className="border p-2 rounded"
+          value={selectedClass || ""}
+          onChange={(e) => setSelectedClass(e.target.value)}
+        >
+          <option value="">Select Class</option>
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.class_name}
+            </option>
+          ))}
+        </select>
+
+        {/* Date */}
+        <Input
+          type="date"
+          value={date}
+          min={academicYear?.start_date}
+          max={academicYear?.end_date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
+
+      {/* <div className="flex gap-4 mb-4">
+        <Input
+          type="date"
+          value={date}
+          min={academicYear?.start_date}
+          max={academicYear?.end_date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div> */}
+
+      {/* STUDENT VIEW */}
       {view === "students" && (
         <>
-          {/* TOP BAR */}
           <div className="flex gap-4 mb-4">
             <Button onClick={() => setView("classes")}>← Back</Button>
-
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
           </div>
-
           {/* TABLE */}
           <Card>
             <CardHeader>
@@ -191,33 +260,35 @@ setStudents(res);
               <table className="w-full border">
                 <thead>
                   <tr className="bg-slate-100">
-                    <th className="p-2 border">Roll</th>
+                    <th className="p-2 border text-center  w-24">
+                      Present/Absent
+                    </th>
                     <th className="p-2 border">Name</th>
-                    <th className="p-2 border">Present</th>
-                    <th className="p-2 border">Absent</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {students.map((s) => (
                     <tr key={s.enrollment_id}>
-                      <td className="p-2 border">{s.roll_number}</td>
-                      <td className="p-2 border">{s.student_name}</td>
+                      {/* Present Checkbox */}
+                      <td className="p-2 border text-center">
+                        <input
+                          type="checkbox"
+                          // disabled={!isEditing}
+                          checked={
+                            attendance[s.enrollment_id]?.status === "Present"
+                          }
+                          onChange={(e) =>
+                            handleStatus(
+                              s.enrollment_id,
+                              e.target.checked ? "Present" : "Absent",
+                            )
+                          }
+                        />
+                      </td>
 
-                      {["Present", "Absent"].map((status) => (
-                        <td key={status} className="text-center border">
-                          <input
-                            type="radio"
-                            name={`att-${s.enrollment_id}`}
-                            checked={
-                              attendance[s.enrollment_id]?.status === status
-                            }
-                            onChange={() =>
-                              handleStatus(s.enrollment_id, status)
-                            }
-                          />
-                        </td>
-                      ))}
+                      {/* Name */}
+                      <td className="p-2 border">{s.student_name}</td>
                     </tr>
                   ))}
                 </tbody>

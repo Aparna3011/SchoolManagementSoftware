@@ -1,7 +1,7 @@
-const CompanyModel = require('../models/companyModel');
-const { ipcMain } = require('electron');
-const fs = require('fs');
-const path = require('path');
+const CompanyModel = require("../models/companyModel");
+const { ipcMain } = require("electron");
+const fs = require("fs");
+const path = require("path");
 
 /**
  * Company Controller
@@ -17,23 +17,23 @@ function filePathToDataUrl(photoPath) {
     }
 
     const buffer = fs.readFileSync(photoPath);
-    const base64 = buffer.toString('base64');
+    const base64 = buffer.toString("base64");
 
     const extRaw = path.extname(photoPath).slice(1).toLowerCase();
     const mimeByExt = {
-      jpg: 'jpeg',
-      jpeg: 'jpeg',
-      png: 'png',
-      webp: 'webp',
-      gif: 'gif',
-      bmp: 'bmp',
-      svg: 'svg+xml',
+      jpg: "jpeg",
+      jpeg: "jpeg",
+      png: "png",
+      webp: "webp",
+      gif: "gif",
+      bmp: "bmp",
+      svg: "svg+xml",
     };
 
-    const mime = mimeByExt[extRaw] || 'jpeg';
+    const mime = mimeByExt[extRaw] || "jpeg";
     return `data:image/${mime};base64,${base64}`;
   } catch (error) {
-    console.error('[CompanyController] filePathToDataUrl error:', error);
+    console.error("[CompanyController] filePathToDataUrl error:", error);
     return null;
   }
 }
@@ -49,22 +49,22 @@ function attachLogoBase64(profile) {
 }
 
 function registerCompanyHandlers() {
-  ipcMain.handle('company:get', async () => {
+  ipcMain.handle("company:get", async () => {
     try {
       const profile = CompanyModel.get();
       return { success: true, data: attachLogoBase64(profile) };
     } catch (error) {
-      console.error('[CompanyController] get error:', error);
+      console.error("[CompanyController] get error:", error);
       return { success: false, error: error.message };
     }
   });
 
-  ipcMain.handle('company:update', async (_event, data) => {
+  ipcMain.handle("company:update", async (_event, data) => {
     try {
       const updated = CompanyModel.update(data);
       return { success: true, data: attachLogoBase64(updated) };
     } catch (error) {
-      console.error('[CompanyController] update error:', error);
+      console.error("[CompanyController] update error:", error);
       return { success: false, error: error.message };
     }
   });

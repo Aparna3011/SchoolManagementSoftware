@@ -6,7 +6,7 @@ import Fees from './pages/Fees';
 import MasterSettings from './pages/MasterSettings';
 import CompanyProfile from './pages/CompanyProfile';
 import Attendance from './pages/Attendance';
-import AppToaster from "./components/ui/AppToaster";
+// import AppToaster from "./components/ui/AppToaster";
 
 /**
  * App Root Component
@@ -18,7 +18,7 @@ import AppToaster from "./components/ui/AppToaster";
 export default function App() {
   return (
     <HashRouter>
-     <AppToaster />
+     {/* <AppToaster /> */}
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />

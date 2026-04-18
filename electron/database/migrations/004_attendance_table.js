@@ -17,24 +17,27 @@ function up(db) {
   // EXISTING TABLES ABOVE...
 
  db.exec(`
-  CREATE TABLE IF NOT EXISTS Attendance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+ CREATE TABLE IF NOT EXISTS Attendance (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    enrollment_id INTEGER NOT NULL,
-    attendance_date DATE DEFAULT CURRENT_DATE,
+  enrollment_id INTEGER NOT NULL,
 
-    status TEXT DEFAULT 'Present'
-      CHECK(status IN ('Present','Absent')),
+  attendance_date DATE NOT NULL DEFAULT CURRENT_DATE,
 
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  status TEXT DEFAULT 'Present'
+    CHECK(status IN ('Present','Absent')),
 
-    FOREIGN KEY(enrollment_id)
-      REFERENCES Student_Enrollments(id)
-      ON DELETE CASCADE,
+  note TEXT DEFAULT '',
 
-    UNIQUE(enrollment_id, attendance_date)
-  );
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY(enrollment_id)
+    REFERENCES Student_Enrollments(id)
+    ON DELETE CASCADE,
+
+  UNIQUE(enrollment_id, attendance_date)
+);
 `);
 }
 

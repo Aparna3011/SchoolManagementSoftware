@@ -1,31 +1,24 @@
 const { getDatabase } = require('../database/connection');
 
-/**
- * Attendance Model
- *
- * Handles Attendance table operations
- */
-
 const AttendanceModel = {
-  /**
-   * Get attendance by date
-   * @param {string} date
-   */
-  getByDateAndClass(date, classId) {
-  const db = getDatabase();
+  getStudentsByClass(classId) {
+    const db = getDatabase();
 
-  return db.prepare(`
-    SELECT a.*
-    FROM Attendance a
-    JOIN Student_Enrollments se ON se.id = a.enrollment_id
-    WHERE a.attendance_date = ?
-    AND se.class_id = ?
-  `).all(date, classId);
-},
-  /**
-   * Save or Update Attendance (Bulk)
-   * @param {Array} records
-   */
+    return db.prepare(`
+      SELECT 
+        se.id AS enrollment_id,
+        se.roll_number,
+        sm.student_name
+      FROM Student_Enrollments se
+      JOIN Students_Master sm ON sm.id = se.student_id
+      JOIN Academic_Years ay ON ay.id = se.academic_year_id
+      WHERE se.class_id = ?
+      AND ay.is_active = 1
+      ORDER BY se.roll_number
+      LIMIT 50
+    `).all(classId);
+  },
+
   saveBulk(records) {
     const db = getDatabase();
 
