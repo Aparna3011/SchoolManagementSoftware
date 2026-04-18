@@ -8,6 +8,7 @@ import { Input, Textarea } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { ImageCropModal } from '../components/ui/ImageCropModal';
 import { RegistrationFormPDF } from '../components/pdf/RegistrationFormPDF';
 import { toast } from 'react-toastify';
 
@@ -65,6 +66,9 @@ export default function Registration() {
   const [previewPdfUrl, setPreviewPdfUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewInitialized, setPreviewInitialized] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageSource, setCropImageSource] = useState('');
+  const [pendingPhotoFileName, setPendingPhotoFileName] = useState('');
 
   const isDevMode = import.meta.env.DEV;
 
@@ -173,13 +177,14 @@ export default function Registration() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async () => {
+    reader.onload = () => {
       const base64 = reader.result;
-      setPhotoPreview(base64);
-      setPhotoPath('');
-      setPhotoFileName(file.name);
+      setCropImageSource(base64);
+      setPendingPhotoFileName(file.name);
+      setCropModalOpen(true);
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   }
 
   const capturePhoto = useCallback(async () => {
@@ -188,11 +193,30 @@ export default function Registration() {
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) return;
 
-    setPhotoPreview(imageSrc);
-    setPhotoPath('');
-    setPhotoFileName('webcam_capture.jpg');
+    setCropImageSource(imageSrc);
+    setPendingPhotoFileName('webcam_capture.jpg');
+    setCropModalOpen(true);
     setWebcamOpen(false);
   }, [webcamRef, execute]);
+
+  function handleApplyStudentPhotoCrop({ croppedDataUrl }) {
+    if (!croppedDataUrl) {
+      return;
+    }
+
+    setPhotoPreview(croppedDataUrl);
+    setPhotoPath('');
+    setPhotoFileName(pendingPhotoFileName || 'cropped_photo.jpg');
+    setCropModalOpen(false);
+    setCropImageSource('');
+    setPendingPhotoFileName('');
+  }
+
+  function closeCropModal() {
+    setCropModalOpen(false);
+    setCropImageSource('');
+    setPendingPhotoFileName('');
+  }
 
   function clearPhoto() {
     setPhotoPreview(null);
@@ -982,6 +1006,20 @@ export default function Registration() {
         </div>
       </Modal>
 
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        title="Crop Student Photo"
+        imageSrc={cropImageSource}
+        onClose={closeCropModal}
+        onApply={handleApplyStudentPhotoCrop}
+        defaultAspect="0.7777777778"
+        aspectOptions={[
+          { value: '0.7777777778', label: 'Passport (35:45)' },
+          { value: '1', label: 'Square (1:1)' },
+          { value: '1.5', label: 'Card (3:2)' },
+        ]}
+      />
+
       {isDevMode && (
         <Card className="mt-6">
           <CardHeader>
@@ -1010,7 +1048,7 @@ export default function Registration() {
                 <iframe
                   title="Registration PDF Preview"
                   src={previewPdfUrl}
-                  className="w-full h-[1400px] border border-slate-200 rounded-md"
+                  className="w-full h-350 border border-slate-200 rounded-md"
                 />
               )}
               {!previewLoading && !previewPdfUrl && (

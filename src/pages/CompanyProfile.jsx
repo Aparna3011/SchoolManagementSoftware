@@ -174,7 +174,7 @@ export default function CompanyProfile() {
                   name="tagline"
                   value={form.tagline}
                   onChange={handleChange}
-                  placeholder="e.g., || बालदेवो भव ||"
+                  placeholder="e.g., Empowering Young Minds for a Brighter Future"
                   rows={2}
                 />
                 <Textarea
