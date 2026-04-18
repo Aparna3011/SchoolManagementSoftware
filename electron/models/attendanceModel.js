@@ -22,13 +22,14 @@ const AttendanceModel = {
   },
 
   // 🔥 ADD THIS NEW FUNCTION
-  getAttendanceWithStudents(date,  classId,academicYearId) {
+  getAttendanceWithStudents(date,  classId, academicYearId) {
     const db = getDatabase();
 
     return db.prepare(`
       SELECT 
         se.id AS enrollment_id,
         se.roll_number,
+        sm.usin,
         sm.student_name,
         a.status AS attendance_status,
         a.attendance_date AS attendance_date,

@@ -201,8 +201,16 @@ export default function Attendance() {
           value={selectedYear?.id || ""}
           onChange={(e) => {
             const year = years.find((y) => y.id == e.target.value);
+
             setSelectedYear(year);
-            setDate(year.start_date);
+
+            const today = getToday();
+
+            if (today >= year.start_date && today <= year.end_date) {
+              setDate(today);
+            } else {
+              setDate(year.start_date);
+            }
           }}
         >
           <option value="">Select Year</option>
@@ -260,6 +268,8 @@ export default function Attendance() {
                     <th className="p-2 border text-center  w-24">
                       Present/Absent
                     </th>
+                    <th className="p-2 border w-32">USIN</th>
+                    <th className="p-2 border w-32">Roll No</th>
                     <th className="p-2 border">Name</th>
                   </tr>
                 </thead>
@@ -280,7 +290,9 @@ export default function Attendance() {
                           }
                         />
                       </td>
-
+                      {/* USIN */}
+                      <td className="p-2 border">{s.usin}</td>
+                      <td className="p-2 border">{s.roll_number}</td>
                       {/* Name */}
                       <td className="p-2 border">{s.student_name}</td>
                     </tr>

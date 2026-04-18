@@ -13,8 +13,6 @@ function registerAttendanceHandlers() {
           academicYearId
         );
         // console.log("Data from Model:", data);
-
-         console.log("DB DATA:", data);
         return { success: true, data };
       } catch (error) {
         console.error("[AttendanceController] get error:", error);
