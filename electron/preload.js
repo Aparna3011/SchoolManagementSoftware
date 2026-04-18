@@ -39,22 +39,22 @@ contextBridge.exposeInMainWorld("api", {
 
   // ============ STUDENTS ============
   student: {
-    getAll: (filters) => ipcRenderer.invoke("student:getAll", filters),
-    getById: (id) => ipcRenderer.invoke("student:getById", id),
+    getAll: (filters) => ipcRenderer.invoke('student:getAll', filters),
+    getById: (id) => ipcRenderer.invoke('student:getById', id),
+    getEnrollments: (studentId) => ipcRenderer.invoke('student:getEnrollments', studentId),
+    getFeesSummaryByYear: (studentId) => ipcRenderer.invoke('student:getFeesSummaryByYear', studentId),
     generateUSIN: (academic_year_id, class_id) =>
-      ipcRenderer.invoke("student:generateUSIN", {
-        academic_year_id,
-        class_id,
-      }),
-    create: (data) => ipcRenderer.invoke("student:create", data),
-    update: (id, data) => ipcRenderer.invoke("student:update", { id, data }),
-    getStats: () => ipcRenderer.invoke("student:getStats"),
-    getRecent: (limit) => ipcRenderer.invoke("student:getRecent", limit),
+      ipcRenderer.invoke('student:generateUSIN', { academic_year_id, class_id }),
+    create: (data) => ipcRenderer.invoke('student:create', data),
+    update: (id, data) => ipcRenderer.invoke('student:update', { id, data }),
+    updateStatus: (id, status) => ipcRenderer.invoke('student:updateStatus', { id, status }),
+    getStats: () => ipcRenderer.invoke('student:getStats'),
+    getRecent: (limit) => ipcRenderer.invoke('student:getRecent', limit),
     savePhoto: (base64Data, fileName) =>
-      ipcRenderer.invoke("student:savePhoto", { base64Data, fileName }),
-    getPhoto: (photoPath) => ipcRenderer.invoke("student:getPhoto", photoPath),
-    printPdf: (base64Pdf) =>
-      ipcRenderer.invoke("student:printPdf", { base64Pdf }),
+      ipcRenderer.invoke('student:savePhoto', { base64Data, fileName }),
+    getPhoto: (photoPath) => ipcRenderer.invoke('student:getPhoto', photoPath),
+    deletePhoto: (photoPath) => ipcRenderer.invoke('student:deletePhoto', photoPath),
+    printPdf: (base64Pdf) => ipcRenderer.invoke('student:printPdf', { base64Pdf }),
   },
 
   // ============ PAYMENTS ============

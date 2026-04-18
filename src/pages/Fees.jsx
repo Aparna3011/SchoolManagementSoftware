@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, IndianRupee, FileText, XCircle, AlertCircle, Eye, RefreshCw } from 'lucide-react';
+import { Search, IndianRupee, FileText, XCircle, AlertCircle, Download, Eye, Printer, RefreshCw } from 'lucide-react';
 import { pdf, PDFDownloadLink } from '@react-pdf/renderer';
 import { useDatabase } from '../hooks/useDatabase';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/ui/Card';
@@ -38,12 +38,15 @@ export default function Fees() {
   const [previewPayment, setPreviewPayment] = useState(null);
   const [previewPdfUrl, setPreviewPdfUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [printingPaymentId, setPrintingPaymentId] = useState(null);
 
   useEffect(() => {
     return () => {
       if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
     };
   }, [previewPdfUrl]);
+
+
 
   function clearPreview() {
     setPreviewPayment(null);
@@ -174,6 +177,40 @@ export default function Fees() {
     }
   }
 
+  async function handleDirectPrintReceipt(paymentRow) {
+    if (!paymentRow || !selectedStudent) return;
+
+    try {
+      setPrintingPaymentId(paymentRow.id);
+
+      const blob = await pdf(
+        <FeesReceiptPDF
+          payment={paymentRow}
+          student={selectedStudent}
+          company={companyProfile}
+          ledger={ledger}
+        />,
+      ).toBlob();
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Pdf = btoa(binary);
+
+      const printed = await execute(() => window.api.student.printPdf(base64Pdf));
+      if (!printed) {
+        throw new Error('Failed to send receipt to printer.');
+      }
+    } catch (err) {
+      console.error('Failed to print receipt directly:', err);
+    } finally {
+      setPrintingPaymentId(null);
+    }
+  }
+
   const paymentColumns = [
     { key: 'receipt_no', label: 'Receipt No.' },
     {
@@ -198,17 +235,29 @@ export default function Fees() {
     {
       key: 'actions',
       label: '',
-      width: '170px',
+      width: '220px',
       render: (_, row) =>
         row.status === 'Active' ? (
           <div className="flex gap-2 justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDirectPrintReceipt(row)}
+              title="Print Receipt"
+              disabled={printingPaymentId === row.id}
+            >
+              {printingPaymentId === row.id
+                ? <RefreshCw size={14} className="animate-spin" />
+                : <Printer size={14} />}
+            </Button>
+
             <PDFDownloadLink
               document={<FeesReceiptPDF payment={row} student={selectedStudent} company={companyProfile} ledger={ledger} />}
               fileName={`receipt_${row.receipt_no?.replace(/\//g, '_')}.pdf`}
               className="inline-flex items-center justify-center p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-              title="Print Receipt"
+              title="Download Receipt PDF"
             >
-              {({ loading: preparing }) => (preparing ? <AlertCircle size={14} className="animate-spin" /> : <FileText size={14} />)}
+              {({ loading: preparing }) => (preparing ? <AlertCircle size={14} className="animate-spin" /> : <Download  size={14} />)}
             </PDFDownloadLink>
 
             {isDevMode && (
@@ -401,9 +450,9 @@ export default function Fees() {
                     </div>
                   </CardHeader>
                   <CardBody>
-                    <div className="w-full min-h-[520px]">
+                    <div className="w-full min-h-130">
                       {previewLoading && (
-                        <div className="w-full h-[520px] flex items-center justify-center text-slate-500">
+                        <div className="w-full h-130 flex items-center justify-center text-slate-500">
                           Generating receipt preview...
                         </div>
                       )}
@@ -412,12 +461,12 @@ export default function Fees() {
                         <iframe
                           title="Receipt PDF Preview"
                           src={previewPdfUrl}
-                          className="w-full h-[720px] border border-slate-200 rounded-md"
+                          className="w-full h-180 border border-slate-200 rounded-md"
                         />
                       )}
 
                       {!previewLoading && !previewPdfUrl && (
-                        <div className="w-full h-[520px] flex items-center justify-center text-slate-500">
+                        <div className="w-full h-130 flex items-center justify-center text-slate-500">
                           Preview could not be generated.
                         </div>
                       )}

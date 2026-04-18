@@ -7,6 +7,8 @@ import MasterSettings from './pages/MasterSettings';
 import CompanyProfile from './pages/CompanyProfile';
 import Attendance from './pages/Attendance';
 // import AppToaster from "./components/ui/AppToaster";
+import Students from './pages/Students';
+import StudentDetail from './pages/StudentDetail';
 
 /**
  * App Root Component
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/master-settings" element={<MasterSettings />} />
           <Route path="/company-profile" element={<CompanyProfile />} />
           <Route path="/attendance" element={<Attendance />} />
+          <Route path="/students" element={<Students />} />
+          <Route path="/students/:studentId" element={<StudentDetail />} />
         </Route>
       </Routes>
     </HashRouter>

@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   UserPlus,
   IndianRupee,
+  Users,
   Settings,
   Building2,
   CalendarCheck,
@@ -17,6 +18,7 @@ import {
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/registration', label: 'Registration', icon: UserPlus },
+  { to: '/students', label: 'Students', icon: Users  },
   { to: '/fees', label: 'Fees', icon: IndianRupee },
   { to: '/master-settings', label: 'Master Settings', icon: Settings },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck },

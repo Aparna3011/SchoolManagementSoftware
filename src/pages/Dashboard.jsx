@@ -172,7 +172,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Recent Registrations</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/registration')}>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/students')}>
                 View All <ArrowRight size={14} />
               </Button>
             </CardHeader>

@@ -9,6 +9,14 @@ function getTargetYearId(db, requestedYearId) {
   return active?.id || null;
 }
 
+function normalizeStudentStatus(status) {
+  const allowedStatuses = ['Active', 'Alumni', 'Transferred'];
+  if (!status || !allowedStatuses.includes(status)) {
+    throw new Error('Invalid student status. Allowed values: Active, Alumni, Transferred.');
+  }
+  return status;
+}
+
 const StudentModel = {
   getAll(filters = {}) {
     const db = getDatabase();
@@ -396,6 +404,76 @@ const StudentModel = {
       ORDER BY sm.id DESC
       LIMIT ?
     `).all(limit);
+  },
+
+  getEnrollments(studentId) {
+    const db = getDatabase();
+
+    return db.prepare(`
+      SELECT
+        se.id,
+        se.student_id,
+        se.academic_year_id,
+        se.class_id,
+        se.section_id,
+        se.roll_number,
+        se.agreed_annual_fee,
+        ay.year_label,
+        cm.class_name,
+        cm.short_code
+      FROM Student_Enrollments se
+      JOIN Academic_Years ay ON ay.id = se.academic_year_id
+      JOIN Classes_Master cm ON cm.id = se.class_id
+      WHERE se.student_id = ?
+      ORDER BY ay.id DESC, se.id DESC
+    `).all(studentId);
+  },
+
+  getFeesSummaryByYear(studentId) {
+    const db = getDatabase();
+
+    return db.prepare(`
+      SELECT
+        se.id AS enrollment_id,
+        se.student_id,
+        se.academic_year_id,
+        ay.year_label,
+        se.class_id,
+        cm.class_name,
+        se.roll_number,
+        COALESCE(se.agreed_annual_fee, 0) AS total_fee,
+        COALESCE(p.total_paid, 0) AS total_paid,
+        CASE
+          WHEN COALESCE(se.agreed_annual_fee, 0) - COALESCE(p.total_paid, 0) > 0
+          THEN COALESCE(se.agreed_annual_fee, 0) - COALESCE(p.total_paid, 0)
+          ELSE 0
+        END AS pending_balance
+      FROM Student_Enrollments se
+      JOIN Academic_Years ay ON ay.id = se.academic_year_id
+      JOIN Classes_Master cm ON cm.id = se.class_id
+      LEFT JOIN (
+        SELECT
+          enrollment_id,
+          SUM(amount_paid) AS total_paid
+        FROM Payments
+        WHERE status = 'Active'
+        GROUP BY enrollment_id
+      ) p ON p.enrollment_id = se.id
+      WHERE se.student_id = ?
+      ORDER BY ay.id DESC, se.id DESC
+    `).all(studentId);
+  },
+
+  updateStatus(studentId, status) {
+    const db = getDatabase();
+    const normalizedStatus = normalizeStudentStatus(status);
+
+    const result = db.prepare('UPDATE Students_Master SET status = ? WHERE id = ?').run(normalizedStatus, studentId);
+    if (result.changes === 0) {
+      throw new Error('Student not found.');
+    }
+
+    return this.getById(studentId);
   },
 };
 
