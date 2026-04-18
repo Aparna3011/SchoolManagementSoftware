@@ -12,6 +12,19 @@
     "build": "vite build && electron-builder",
     "preview": "vite preview"
   },
+  "build": {
+    "appId": "com.svs.schoolmanagementsoftware",
+    "productName": "School Management Software",
+    "icon": "electron/favicon.ico",
+    "directories": {
+      "output": "release"
+    },
+    "files":  [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

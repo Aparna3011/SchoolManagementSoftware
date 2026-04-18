@@ -45,6 +45,8 @@ export default function Fees() {
     };
   }, [previewPdfUrl]);
 
+
+
   function clearPreview() {
     setPreviewPayment(null);
     setPreviewPdfUrl((prev) => {
