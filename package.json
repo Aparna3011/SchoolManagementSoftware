@@ -12,6 +12,19 @@
     "build": "vite build && electron-builder",
     "preview": "vite preview"
   },
+  "build": {
+    "appId": "com.svs.schoolmanagementsoftware",
+    "productName": "School Management Software",
+    "icon": "electron/favicon.ico",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -33,6 +46,7 @@
     "lucide-react": "^1.8.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-easy-crop": "^5.5.7",
     "react-router-dom": "^7.14.1",
     "react-toastify": "^11.0.5",
     "react-webcam": "^7.2.0",
