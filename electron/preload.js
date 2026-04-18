@@ -1,40 +1,39 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer } = require('electron');
 
 /**
  * Preload Script
- *
+ * 
  * Exposes a safe API to the renderer process via contextBridge.
  * The renderer accesses these methods through `window.api`.
- *
+ * 
  * Pattern: window.api.<domain>.<method>(args)
  * Each method returns: { success: boolean, data?: any, error?: string }
  */
 
-contextBridge.exposeInMainWorld("api", {
+contextBridge.exposeInMainWorld('api', {
   // ============ COMPANY PROFILE ============
   company: {
-    get: () => ipcRenderer.invoke("company:get"),
-    update: (data) => ipcRenderer.invoke("company:update", data),
+    get: () => ipcRenderer.invoke('company:get'),
+    update: (data) => ipcRenderer.invoke('company:update', data),
   },
 
   // ============ FINANCIAL YEARS ============
   financialYear: {
-    getAll: () => ipcRenderer.invoke("financialYear:getAll"),
-    getActive: () => ipcRenderer.invoke("financialYear:getActive"),
-    create: (data) => ipcRenderer.invoke("financialYear:create", data),
-    update: (id, data) =>
-      ipcRenderer.invoke("financialYear:update", { id, data }),
-    setActive: (id) => ipcRenderer.invoke("financialYear:setActive", id),
-    delete: (id) => ipcRenderer.invoke("financialYear:delete", id),
+    getAll: () => ipcRenderer.invoke('financialYear:getAll'),
+    getActive: () => ipcRenderer.invoke('financialYear:getActive'),
+    create: (data) => ipcRenderer.invoke('financialYear:create', data),
+    update: (id, data) => ipcRenderer.invoke('financialYear:update', { id, data }),
+    setActive: (id) => ipcRenderer.invoke('financialYear:setActive', id),
+    delete: (id) => ipcRenderer.invoke('financialYear:delete', id),
   },
 
   // ============ CLASSES ============
   class: {
-    getAll: () => ipcRenderer.invoke("class:getAll"),
-    getById: (id) => ipcRenderer.invoke("class:getById", id),
-    create: (data) => ipcRenderer.invoke("class:create", data),
-    update: (id, data) => ipcRenderer.invoke("class:update", { id, data }),
-    delete: (id) => ipcRenderer.invoke("class:delete", id),
+    getAll: () => ipcRenderer.invoke('class:getAll'),
+    getById: (id) => ipcRenderer.invoke('class:getById', id),
+    create: (data) => ipcRenderer.invoke('class:create', data),
+    update: (id, data) => ipcRenderer.invoke('class:update', { id, data }),
+    delete: (id) => ipcRenderer.invoke('class:delete', id),
   },
 
   // ============ STUDENTS ============
@@ -59,14 +58,12 @@ contextBridge.exposeInMainWorld("api", {
 
   // ============ PAYMENTS ============
   payment: {
-    getByEnrollment: (enrollmentId) =>
-      ipcRenderer.invoke("payment:getByEnrollment", enrollmentId),
-    create: (data) => ipcRenderer.invoke("payment:create", data),
-    cancel: (id) => ipcRenderer.invoke("payment:cancel", id),
-    getLedger: (enrollmentId) =>
-      ipcRenderer.invoke("payment:getLedger", enrollmentId),
-    getStats: () => ipcRenderer.invoke("payment:getStats"),
-    generateReceiptNo: () => ipcRenderer.invoke("payment:generateReceiptNo"),
+    getByEnrollment: (enrollmentId) => ipcRenderer.invoke('payment:getByEnrollment', enrollmentId),
+    create: (data) => ipcRenderer.invoke('payment:create', data),
+    cancel: (id) => ipcRenderer.invoke('payment:cancel', id),
+    getLedger: (enrollmentId) => ipcRenderer.invoke('payment:getLedger', enrollmentId),
+    getStats: () => ipcRenderer.invoke('payment:getStats'),
+    generateReceiptNo: () => ipcRenderer.invoke('payment:generateReceiptNo'),
   },
 
   attendance: {
