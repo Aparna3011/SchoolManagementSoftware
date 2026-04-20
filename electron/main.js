@@ -12,6 +12,7 @@ const { registerClassHandlers } = require("./controllers/classController");
 const { registerStudentHandlers } = require("./controllers/studentController");
 const { registerPaymentHandlers } = require("./controllers/paymentController");
 const { registerAttendanceHandlers } = require('./controllers/attendanceController');
+const { registerAttendanceSettingsHandlers } = require('./controllers/attendanceSettingsController');
 
 let mainWindow = null;
 
@@ -72,6 +73,8 @@ function registerAllHandlers() {
   registerStudentHandlers();
   registerPaymentHandlers();
   registerAttendanceHandlers();
+  registerAttendanceSettingsHandlers();
+
   console.log("[Main] All IPC handlers registered.");
 }
 

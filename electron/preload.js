@@ -75,4 +75,18 @@ contextBridge.exposeInMainWorld("api", {
      saveBulk: (records) =>
       ipcRenderer.invoke("attendance:saveBulk", records),
   },
+
+    // ============ ATTENDANCE SETTINGS ============
+
+  weekly: {
+    getAll: () => ipcRenderer.invoke("weekly:getAll"),
+    update: (data) => ipcRenderer.invoke("weekly:update", data),
+  },
+
+  holiday: {
+    getAll: (yearId) => ipcRenderer.invoke("holiday:getAll", yearId),
+    create: (data) => ipcRenderer.invoke("holiday:create", data),
+    delete: (id) => ipcRenderer.invoke("holiday:delete", id),
+  },
+
 });
