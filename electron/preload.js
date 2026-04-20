@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld('api', {
     getAll: (yearId) => ipcRenderer.invoke("holiday:getAll", yearId),
     create: (data) => ipcRenderer.invoke("holiday:create", data),
     delete: (id) => ipcRenderer.invoke("holiday:delete", id),
+    update: (id, data) => ipcRenderer.invoke("holiday:update", { id, data }),
   },
 
 });

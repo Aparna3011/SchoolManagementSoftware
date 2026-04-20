@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Calendar } from "lucide-react";
+import { Plus, Trash2, Edit2, Calendar } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import { toast } from "react-toastify";
 import { Card, CardHeader, CardTitle, CardBody } from "../components/ui/Card";
@@ -16,14 +16,22 @@ export default function AttendanceSettings() {
 
   const [weekly, setWeekly] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
 
   const [form, setForm] = useState({
     start_date: "",
     end_date: "",
+    name: "",
     description: "",
   });
+
+  function formatDate(date) {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  }
 
   // ================= LOAD DATA =================
 
@@ -40,7 +48,12 @@ export default function AttendanceSettings() {
 
   async function loadYears() {
     const data = await execute(() => window.api.financialYear.getAll());
-    if (data) setYears(data);
+    if (!data) return;
+
+    setYears(data);
+
+    const active = data.find((y) => y.is_active === 1);
+    if (active) setSelectedYear(active);
   }
 
   async function loadWeekly() {
@@ -57,7 +70,7 @@ export default function AttendanceSettings() {
 
     if (!res) return;
 
-    setHolidays(res.data || res); // 🔥 handles both cases
+    setHolidays(res.data || res);
   }
 
   // ================= WEEKLY =================
@@ -78,7 +91,13 @@ export default function AttendanceSettings() {
   // ================= HOLIDAYS =================
 
   function openModal() {
-    setForm({ start_date: "", end_date: "", description: "" });
+    setForm({
+      start_date: "",
+      end_date: "",
+      name: "",
+      description: "",
+    });
+    setEditingId(null);
     setModalOpen(true);
   }
 
@@ -88,17 +107,59 @@ export default function AttendanceSettings() {
       return;
     }
 
-    await execute(() =>
-      window.api.holiday.create({
-        start_date: form.start_date,
-        end_date: form.end_date,
-        description: form.description,
-        academicYearId: selectedYear.id,
-      }),
-    );
+    const payload = {
+      academicYearId: selectedYear.id,
+      start_date: form.start_date, // already correct format
+      end_date: form.end_date,
+      name: form.name,
+      description: form.description,
+    };
+
+    let res;
+
+    if (editingId) {
+      res = await execute(() => window.api.holiday.update(editingId, payload));
+
+      console.log("UPDATE RESPONSE:", res);
+
+      const result = res?.data || res;
+
+      if (!result || result.success === false) {
+        toast.error("Failed to update holiday");
+        return;
+      }
+
+      toast.success("Holiday updated");
+    } else {
+      res = await execute(() => window.api.holiday.create(payload));
+
+      console.log("CREATE RESPONSE:", res);
+
+      const result = res?.data ?? res;
+
+      if (result?.success === false) {
+        toast.error("Failed to create holiday");
+        return;
+      }
+
+      toast.success("Holiday created");
+    }
 
     setModalOpen(false);
-    loadHolidays();
+    setEditingId(null);
+    await loadHolidays();
+  }
+
+  function editHoliday(row) {
+    setForm({
+      start_date: row.start_date,
+      end_date: row.end_date,
+      name: row.name,
+      description: row.description,
+    });
+
+    setEditingId(row.id);
+    setModalOpen(true);
   }
 
   async function deleteHoliday(id) {
@@ -111,14 +172,25 @@ export default function AttendanceSettings() {
   const holidayColumns = [
     { key: "start_date", label: "Start Date" },
     { key: "end_date", label: "End Date" },
+    { key: "name", label: "Name" },
     { key: "description", label: "Description" },
     {
       key: "actions",
       label: "Actions",
       render: (_, row) => (
-        <Button variant="ghost" size="sm" onClick={() => deleteHoliday(row.id)}>
-          <Trash2 size={14} />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => editHoliday(row)}>
+            <Edit2 size={14} />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteHoliday(row.id)}
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -127,80 +199,78 @@ export default function AttendanceSettings() {
 
   return (
     <div>
-      {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Attendance Settings</h1>
       </div>
 
-      {/* YEAR SELECT */}
-      <div className="mb-6">
-        
-      </div>
+      <div className="grid grid-cols-3 gap-6">
+        {/* WEEKLY */}
+        <Card className="col-span-1">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Weekly Schedule</CardTitle>
+            <Button size="sm" onClick={saveWeekly}>
+              Save
+            </Button>
+          </CardHeader>
 
-      {/* WEEKLY SCHEDULE */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Weekly Schedule</CardTitle>
-          <Button size="sm" onClick={saveWeekly}>
-            Save
-          </Button>
-        </CardHeader>
+          <CardBody>
+            <div className="flex flex-col gap-3">
+              {weekly.map((day) => (
+                <div
+                  key={day.id}
+                  className="flex justify-between items-center px-4 py-3 shadow-sm"
+                >
+                  <span className="font-medium">{day.day_name}</span>
 
-        <CardBody>
-          <div className="grid grid-cols-7 gap-4 text-center">
-            {weekly.map((d) => (
-              <div key={d.id}>
-                <p className="font-medium">{d.day_name}</p>
-                <input
-                  type="checkbox"
-                  checked={d.is_working === 1}
-                  onChange={() => toggleDay(d.id)}
-                />
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* HOLIDAYS */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <div className="flex items-center gap-2">
-              <Calendar size={16} /> Holidays
+                  <input
+                    type="checkbox"
+                    checked={day.is_working === 1}
+                    onChange={() => toggleDay(day.id)}
+                    className="w-5 h-5"
+                  />
+                </div>
+              ))}
             </div>
-          </CardTitle>
+          </CardBody>
+        </Card>
 
-         <div className="flex gap-10">
-             <select
-          className="border p-2 rounded"
-          value={selectedYear?.id || ""}
-          onChange={(e) =>
-            setSelectedYear(years.find((y) => y.id == e.target.value))
-          }
-        >
-          <option value="">Select Academic Year</option>
-          {years.map((y) => (
-            <option key={y.id} value={y.id}>
-              {y.year_label}
-            </option>
-          ))}
-        </select>
+        {/* HOLIDAYS */}
+        <Card className="col-span-2">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar size={16} /> Holidays
+            </CardTitle>
 
-          <Button size="sm" onClick={openModal}>
-            <Plus size={14} /> Add Holiday
-          </Button>
-         </div>
-        </CardHeader>
+            <div className="flex items-center gap-3">
+              <select
+                className="border p-2 rounded"
+                value={selectedYear?.id || ""}
+                onChange={(e) =>
+                  setSelectedYear(years.find((y) => y.id == e.target.value))
+                }
+              >
+                {years.map((y) => (
+                  <option key={y.id} value={y.id}>
+                    {y.year_label}
+                  </option>
+                ))}
+              </select>
 
-        <CardBody style={{ padding: 0 }}>
-          <Table
-            columns={holidayColumns}
-            data={holidays}
-            emptyMessage="No holidays added"
-          />
-        </CardBody>
-      </Card>
+              <Button size="sm" onClick={openModal}>
+                <Plus size={14} /> Add Holiday
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardBody style={{ padding: 0 }}>
+            <Table
+              columns={holidayColumns}
+              data={holidays}
+              emptyMessage="No holidays added"
+            />
+          </CardBody>
+        </Card>
+      </div>
 
       {/* MODAL */}
       <Modal
@@ -219,6 +289,32 @@ export default function AttendanceSettings() {
         }
       >
         <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Academic Year
+            </label>
+
+            <select
+              className="border p-2 rounded w-full"
+              value={selectedYear?.id || ""}
+              onChange={(e) =>
+                setSelectedYear(years.find((y) => y.id == e.target.value))
+              }
+            >
+              {years.map((y) => (
+                <option key={y.id} value={y.id}>
+                  {y.year_label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* <Input
+            label="Academic Year"
+            type="text"
+            value={selectedYear ? selectedYear.year_label : ""}
+          /> */}
+
           <Input
             label="Start Date"
             type="date"
@@ -235,6 +331,13 @@ export default function AttendanceSettings() {
             onChange={(e) =>
               setForm((p) => ({ ...p, end_date: e.target.value }))
             }
+          />
+
+          <Input
+            label="Name"
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="e.g. Diwali"
           />
 
           <Input

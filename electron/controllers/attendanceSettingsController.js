@@ -2,7 +2,6 @@ const { ipcMain } = require("electron");
 const AttendanceSettingsModel = require("../models/attendanceSettingsModel");
 
 function registerAttendanceSettingsHandlers() {
-
   // ================= WEEKLY =================
 
   ipcMain.handle("weekly:getAll", async () => {
@@ -44,6 +43,19 @@ function registerAttendanceSettingsHandlers() {
       return { success: false, error: err.message };
     }
   });
+
+  //to edit holiday
+
+  ipcMain.handle("holiday:update", async (_e, { id, data }) => {
+    try {
+      return AttendanceSettingsModel.updateHoliday(id, data);
+    } catch (err) {
+      console.error(err);
+      return { success: false, error: err.message };
+    }
+  });
+
+  //to delete holiday
 
   ipcMain.handle("holiday:delete", async (_e, id) => {
     try {

@@ -20,6 +20,10 @@ export default function Attendance() {
   const [date, setDate] = useState(() =>
     new Date().toLocaleDateString("en-CA"),
   );
+
+  const [years, setYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+
   const getToday = () => new Date().toISOString().split("T")[0];
 
   const [classes, setClasses] = useState([]);
@@ -136,14 +140,11 @@ export default function Attendance() {
   }, []);
 
   useEffect(() => {
-    if (!selectedClass) return;
+    if (!selectedClass || !selectedYear) return;
 
     setView("students");
     loadData();
-  }, [selectedClass, date]);
-
-  const [years, setYears] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(null);
+  }, [selectedClass, date, selectedYear]);
 
   useEffect(() => {
     async function loadYears() {
