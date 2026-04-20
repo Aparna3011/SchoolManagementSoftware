@@ -4,13 +4,14 @@ const { ipcMain } = require("electron");
 function registerAttendanceHandlers() {
   ipcMain.handle(
     "attendance:getByFilters",
-    async (_event, { date,  classId, academicYearId, }) => { //academic year add 
+    async (_event, { date, classId, academicYearId }) => {
+      //academic year add
       try {
         const data = AttendanceModel.getAttendanceWithStudents(
-          date, 
+          date,
           //academic year add
           classId,
-          academicYearId
+          academicYearId,
         );
         // console.log("Data from Model:", data);
         return { success: true, data };
@@ -18,7 +19,7 @@ function registerAttendanceHandlers() {
         console.error("[AttendanceController] get error:", error);
         return { success: false, error: error.message };
       }
-    }
+    },
   );
 
   ipcMain.handle("attendance:saveBulk", async (_event, records) => {
@@ -28,6 +29,22 @@ function registerAttendanceHandlers() {
     } catch (error) {
       console.error(error);
       return { success: false, error: error.message };
+    }
+  });
+
+  // Overview Handler
+  ipcMain.handle("attendance:getMonthlyOverview", async (_e, payload) => {
+    try {
+      const data = AttendanceModel.getMonthlyOverview(
+        payload.classId,
+        payload.academicYearId,
+        payload.month,
+      );
+
+      return { success: true, data };
+    } catch (err) {
+      console.error(err);
+      return { success: false, error: err.message };
     }
   });
 }

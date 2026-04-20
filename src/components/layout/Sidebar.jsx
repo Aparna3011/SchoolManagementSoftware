@@ -22,6 +22,7 @@ const navItems = [
   { to: '/fees', label: 'Fees', icon: IndianRupee },
   { to: '/master-settings', label: 'Master Settings', icon: Settings },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
+  { to: '/attendance-overview', label: 'Attendance Overview', icon: CalendarCheck },
   { to: '/attendance-settings', label: 'Attendance Settings', icon: CalendarCheck },
   { to: '/company-profile', label: 'Company Profile', icon: Building2 },
 ];

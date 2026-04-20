@@ -71,6 +71,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke("attendance:getByFilters", payload),
      saveBulk: (records) =>
       ipcRenderer.invoke("attendance:saveBulk", records),
+
+     //Attendance Overview
+     getMonthlyOverview: (data) =>
+    ipcRenderer.invoke("attendance:getMonthlyOverview", data),
   },
 
     // ============ ATTENDANCE SETTINGS ============

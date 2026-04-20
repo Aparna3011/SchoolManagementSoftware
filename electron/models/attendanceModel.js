@@ -1,12 +1,13 @@
-const { getDatabase } = require('../database/connection');
+const { getDatabase } = require("../database/connection");
 
 const AttendanceModel = {
-
   // ✅ EXISTING (keep as it is)
   getStudentsByClass(classId) {
     const db = getDatabase();
 
-    return db.prepare(`
+    return db
+      .prepare(
+        `
       SELECT 
         se.id AS enrollment_id,
         se.roll_number,
@@ -18,14 +19,18 @@ const AttendanceModel = {
       AND ay.is_active = 1
       ORDER BY se.roll_number
       LIMIT 50
-    `).all(classId);
+    `,
+      )
+      .all(classId);
   },
 
   // 🔥 ADD THIS NEW FUNCTION
-  getAttendanceWithStudents(date,  classId, academicYearId) {
+  getAttendanceWithStudents(date, classId, academicYearId) {
     const db = getDatabase();
 
-    return db.prepare(`
+    return db
+      .prepare(
+        `
       SELECT 
         se.id AS enrollment_id,
         se.roll_number,
@@ -47,7 +52,9 @@ const AttendanceModel = {
       AND se.academic_year_id = ?
 
       ORDER BY se.roll_number
-    `).all(date, classId,academicYearId);
+    `,
+      )
+      .all(date, classId, academicYearId);
   },
 
   // ✅ EXISTING (keep as it is)
@@ -65,17 +72,40 @@ const AttendanceModel = {
 
     const transaction = db.transaction((data) => {
       for (const r of data) {
-        stmt.run(
-          r.enrollment_id,
-          r.attendance_date,
-          r.status,
-        );
+        stmt.run(r.enrollment_id, r.attendance_date, r.status);
       }
     });
 
     transaction(records);
 
     return { success: true };
+  },
+
+  // Attendance Overview
+
+  getMonthlyOverview(classId, academicYearId, month) {
+    const db = getDatabase();
+
+    return db
+      .prepare(
+        `
+    SELECT 
+  se.id AS enrollment_id,
+  sm.usin,
+  sm.student_name,
+  sm.status AS student_status,
+  COUNT(CASE WHEN a.status = 'Present' THEN 1 END) AS present_days
+FROM Student_Enrollments se
+JOIN Students_Master sm ON sm.id = se.student_id
+LEFT JOIN Attendance a 
+  ON a.enrollment_id = se.id
+  AND strftime('%Y-%m', a.attendance_date) = ?
+WHERE se.class_id = ?
+AND se.academic_year_id = ?
+GROUP BY se.id;
+  `,
+      )
+      .all(month, classId, academicYearId);
   },
 };
 

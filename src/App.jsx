@@ -10,6 +10,7 @@ import Attendance from './pages/Attendance';
 import Students from './pages/Students';
 import StudentDetail from './pages/StudentDetail';
 import AttendanceSettings from './pages/AttendanceSettings';
+import AttendanceOverview from './pages/AttendanceOverview';
 
 /**
  * App Root Component
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/students" element={<Students />} />
           <Route path="/students/:studentId" element={<StudentDetail />} />
           <Route path="/attendance-settings" element={<AttendanceSettings />} />
+          <Route path="/attendance-overview" element={<AttendanceOverview />} />
         </Route>
       </Routes>
     </HashRouter>

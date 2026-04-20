@@ -215,6 +215,13 @@ export default function AttendanceSettings() {
 
           <CardBody>
             <div className="flex flex-col gap-3">
+              <div
+                //   key={day.id}
+                className="flex justify-between items-center px-4 py-3 shadow-sm"
+              >
+                <span className="font-medium">Day Name</span>
+                <span className="font-medium">Is Working</span>
+              </div>
               {weekly.map((day) => (
                 <div
                   key={day.id}
@@ -290,12 +297,15 @@ export default function AttendanceSettings() {
       >
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               Academic Year
             </label>
 
             <select
-              className="border p-2 rounded w-full"
+              className="w-full h-[40px] px-3 border border-slate-300 rounded-md 
+               text-sm text-slate-900 bg-white
+               focus:outline-none focus:ring-1 focus:ring-indigo-400 
+               focus:border-indigo-400 transition"
               value={selectedYear?.id || ""}
               onChange={(e) =>
                 setSelectedYear(years.find((y) => y.id == e.target.value))
