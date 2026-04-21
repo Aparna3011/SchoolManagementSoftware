@@ -6,8 +6,14 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Table } from "../components/ui/Table";
 import { Badge } from "../components/ui/Badge";
+import { useNavigate } from "react-router-dom";
 
 export default function AttendanceOverview() {
+  const navigate = useNavigate();
+  const viewDetails = (enrollmentId) => {
+    navigate(`/attendance-overview/details/${enrollmentId}`);
+  };
+
   const { execute } = useDatabase();
 
   const [years, setYears] = useState([]);
@@ -60,26 +66,17 @@ export default function AttendanceOverview() {
       }),
     );
 
+    console.log("OVERVIEW ISSSSS" , res);
+
     if (!res) return;
 
-    const workingDays = getWorkingDays(date.slice(0, 7));
-
-    const fixedData = (res.data || res).map((s) => {
-      const percentage = workingDays
-        ? ((s.present_days / workingDays) * 100).toFixed(2)
-        : 0;
-
-      return {
-        ...s,
-        attendance_percentage: percentage,
-      };
-    });
+    // ✅ Backend already sends correct percentage
+    const fixedData = (res.data || res).map((s) => ({
+      ...s,
+      attendance_percentage: s.attendance_percentage,
+    }));
 
     setStudents(fixedData);
-  }
-
-  function viewDetails(id) {
-    console.log("View student:", id);
   }
 
   // =========================
@@ -192,10 +189,10 @@ export default function AttendanceOverview() {
 
     {
       key: "actions",
-      label:  <div className="text-right w-full">Actions</div>,
+      label: <div className="text-right w-full">Actions</div>,
       width: "160px",
       align: "right", // 👈 if your Table supports alignment
-      headerAlign: "right", 
+      headerAlign: "right",
       render: (_, row) => (
         <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
           <Button
@@ -281,6 +278,7 @@ export default function AttendanceOverview() {
               columns={columns}
               data={students}
               emptyMessage="No students found"
+              onRowClick={(row) => viewDetails(row.enrollment_id)}
             />
           </CardBody>
         </Card>

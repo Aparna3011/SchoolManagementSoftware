@@ -33,6 +33,7 @@ function registerAttendanceHandlers() {
   });
 
   // Overview Handler
+  //monthly overview handler
   ipcMain.handle("attendance:getMonthlyOverview", async (_e, payload) => {
     try {
       const data = AttendanceModel.getMonthlyOverview(
@@ -45,6 +46,20 @@ function registerAttendanceHandlers() {
     } catch (err) {
       console.error(err);
       return { success: false, error: err.message };
+    }
+  });
+
+  //yearly overview handler can be added similarly
+  ipcMain.handle("attendance:getStudentFullDetails", async (_e, payload) => {
+    try {
+      const data = AttendanceModel.getStudentYearlyDetails(
+        payload.enrollmentId,
+      );
+
+      return data; // ⚠️ NOT { success: true }
+    } catch (err) {
+      console.error(err);
+      return null;
     }
   });
 }
