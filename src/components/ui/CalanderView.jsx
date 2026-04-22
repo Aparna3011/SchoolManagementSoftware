@@ -49,17 +49,17 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
             ATTENDANCE DASHBOARD
           </h1>
           <p className="text-gray-500 font-medium">
-            Fiscal Year {start.getFullYear()} - {end.getFullYear()}
+            Academic Year {startDate} to {endDate}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm font-bold text-gray-700">
             {start.getFullYear()}
           </div>
           <button className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-md">
             <Plus size={20} />
           </button>
-        </div>
+        </div> */}
       </header>
 
       {/* Responsive Calendar Grid */}

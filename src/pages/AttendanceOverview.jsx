@@ -12,6 +12,7 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Table } from "../components/ui/Table";
 import { Badge } from "../components/ui/Badge";
+import { Select } from "../components/ui/Select";
 import { useNavigate } from "react-router-dom";
 
 export default function AttendanceOverview() {
@@ -160,45 +161,44 @@ export default function AttendanceOverview() {
     {
       key: "monthly_overview",
       label: (
-        <div className="flex justify-between">
-          <p className="text-black">TD</p>
-          <p>/</p>
-          <p className="text-purple-500">WD</p>
-          <p>/</p>
-          <p className="text-green-500">PD</p>
-          <p>/</p>
-          <p className="text-red-500">AD</p>
-          <p>/</p>
-          <p className="text-blue-500">HD</p>{" "}
+        <div className="flex justify-between text-xs font-medium text-slate-500">
+          <span>TD</span>
+          <span className="text-purple-600">WD</span>
+          <span className="text-green-600">PD</span>
+          <span className="text-red-600">AD</span>
+          <span className="text-blue-600">HD</span>
         </div>
       ),
       render: (_, row) => (
-        <span className="text-slate-700 flex justify-between font-medium">
+        <span className="text-slate-700 flex justify-between font-medium text-sm">
           <span>{row.total_days}</span>
-
-          <span className="text-purple-500">{row.working_days}</span>
-
-          <span className="text-green-500">{row.present_days}</span>
-
-          <span className="text-red-500">{row.absent_days}</span>
-
-          <span className="text-blue-500">{row.holidays || 0}</span>
+          <span className="text-purple-600">{row.working_days}</span>
+          <span className="text-green-600">{row.present_days}</span>
+          <span className="text-red-600">{row.absent_days}</span>
+          <span className="text-blue-600">{row.holidays || 0}</span>
         </span>
       ),
     },
 
     {
+      key: "spacer",
+      label: "",
+      width: "20px",
+      render: () => <div className="w-full"></div>,
+    },
+
+    {
       key: "attendance_percentage",
       label: "Attendance %",
-      align: "right", // 👈 if your Table supports alignment
+      align: "right",
       headerAlign: "right",
       render: (value) => {
         const num = Number(value || 0);
 
         return (
           <span
-            className={`font-semibold ${
-              num < 75 ? "text-red-500" : "text-green-600"
+            className={`font-semibold text-sm ${
+              num < 75 ? "text-red-600" : "text-green-600"
             }`}
           >
             {num}%
@@ -210,7 +210,7 @@ export default function AttendanceOverview() {
     {
       key: "student_status",
       label: "Status",
-      align: "right", // 👈 if your Table supports alignment
+      align: "right",
       headerAlign: "right",
       render: (value) => (
         <Badge variant={value === "Active" ? "success" : "warning"}>
@@ -223,7 +223,7 @@ export default function AttendanceOverview() {
       key: "actions",
       label: <div className="text-right w-full">Actions</div>,
       width: "160px",
-      align: "right", // 👈 if your Table supports alignment
+      align: "right",
       headerAlign: "right",
       render: (_, row) => (
         <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
@@ -242,88 +242,107 @@ export default function AttendanceOverview() {
   ];
 
   return (
-    <div>
+    <div className="p-6">
       {/* HEADER */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Attendance Overview</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Attendance Overview</h1>
+        <p className="text-slate-600 mt-1">Monthly attendance summary for students</p>
       </div>
 
-      {/* FILTERS */}
-      <div className="flex gap-4 items-center mb-6">
-        {/* Year */}
-        <select
-          className="border p-2 rounded"
-          value={selectedYear?.id || ""}
-          onChange={(e) => {
-            const year = years.find((y) => y.id == e.target.value);
+      {/* FILTERS CARD */}
+      <Card className="mb-6">
+        <CardBody>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Year */}
+            <Select
+              label="Academic Year"
+              value={selectedYear?.id || ""}
+              onChange={(e) => {
+                const year = years.find((y) => y.id == e.target.value);
+                setSelectedYear(year);
 
-            setSelectedYear(year);
+                const today = getToday();
+                if (year && today >= year.start_date && today <= year.end_date) {
+                  setDate(today);
+                } else if (year) {
+                  setDate(year.start_date);
+                }
+              }}
+              options={years.map(y => ({ value: y.id, label: y.year_label }))}
+            />
 
-            const today = getToday();
+            {/* Class */}
+            <Select
+              label="Class"
+              value={selectedClass || ""}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              options={classes.map(c => ({ value: c.id, label: c.class_name }))}
+            />
 
-            if (today >= year.start_date && today <= year.end_date) {
-              setDate(today);
-            } else {
-              setDate(year.start_date);
-            }
-          }}
-        >
-          <option value="">Select Year</option>
-          {years.map((y) => (
-            <option key={y.id} value={y.id}>
-              {y.year_label}
-            </option>
-          ))}
-        </select>
-
-        {/* Class */}
-        <select
-          className="border p-2 rounded"
-          value={selectedClass || ""}
-          onChange={(e) => setSelectedClass(e.target.value)}
-        >
-          <option value="">Select Class</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.class_name}
-            </option>
-          ))}
-        </select>
-
-        {/* Month */}
-        <Input
-          type="month"
-          value={date.slice(0, 7)}
-          onChange={(e) => setDate(e.target.value + "-01")}
-        />
-      </div>
+            {/* Month */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-900">
+                Month
+              </label>
+              <input
+                type="month"
+                value={date.slice(0, 7)}
+                min={selectedYear?.start_date?.slice(0, 7)}
+                max={selectedYear?.end_date?.slice(0, 7)}
+                onChange={(e) => setDate(e.target.value + "-01")}
+                className="w-full px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 rounded-md outline-none transition-all focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-500"
+              />
+              {selectedYear && (
+                <span className="text-xs text-slate-500">
+                  Valid: {selectedYear.start_date?.slice(0, 7)} to {selectedYear.end_date?.slice(0, 7)}
+                </span>
+              )}
+            </div>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* TABLE */}
-      {view === "students" && (
+      {view === "students" && selectedClass && (
         <Card>
           <CardHeader>
-            <CardTitle>Attendance Overview ({students.length})</CardTitle>
+            <CardTitle>Attendance Overview ({students.length} Students)</CardTitle>
           </CardHeader>
 
           <CardBody style={{ padding: 0 }}>
             <Table
               columns={columns}
               data={students}
-              emptyMessage="No students found"
+              emptyMessage="No students found for the selected class and month"
               onRowClick={(row) => viewDetails(row.enrollment_id)}
             />
           </CardBody>
-          <CardFooter>
-            <div className="flex gap-1">
-              <p className="text-black">Total Days[TD]</p>
-              <p>/</p>
-              <p className="text-purple-500">Working Days[WD]</p>
-              <p>/</p>
-              <p className="text-green-500">Present Days[PD]</p>
-              <p>/</p>
-              <p className="text-red-500">Absent Days[AD]</p>
-              <p>/</p>
-              <p className="text-blue-500">Holiday Days[HD]</p>
+
+          <CardFooter className="bg-slate-50">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-slate-900">Legend:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-700">TD</span>
+                <span className="text-slate-500">= Total Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-purple-600">WD</span>
+                <span className="text-slate-500">= Working Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-600">PD</span>
+                <span className="text-slate-500">= Present Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-red-600">AD</span>
+                <span className="text-slate-500">= Absent Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600">HD</span>
+                <span className="text-slate-500">= Holiday Days</span>
+              </div>
             </div>
           </CardFooter>
         </Card>
