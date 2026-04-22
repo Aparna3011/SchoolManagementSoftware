@@ -84,11 +84,11 @@ const AttendanceoverviewdetailsModel = {
     const today = new Date();
 
     // ✅ FIXED DATES (NO TIMEZONE SHIFT)
-    const start = new Date(student.start_date + "T00:00:00");
-    const academicEnd = new Date(student.end_date + "T23:59:59");
+    const start = new Date(student.start_date);
+    const academicEnd = new Date(student.end_date);
 
     // ✅ FINAL RANGE
-    const end = new Date(Math.min(today, academicEnd));
+    // const end = new Date(Math.min(today, academicEnd));
 
     // =========================
     // ✅ 1. FULL YEAR CALENDAR
