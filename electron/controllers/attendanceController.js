@@ -49,19 +49,7 @@ function registerAttendanceHandlers() {
     }
   });
 
-  //yearly overview handler can be added similarly
-  ipcMain.handle("attendance:getStudentFullDetails", async (_e, payload) => {
-    try {
-      const data = AttendanceModel.getStudentYearlyDetails(
-        payload.enrollmentId,
-      );
-
-      return data; // ⚠️ NOT { success: true }
-    } catch (err) {
-      console.error(err);
-      return null;
-    }
-  });
+  
 }
 
 module.exports = { registerAttendanceHandlers };

@@ -2,13 +2,29 @@ import React from "react";
 import { Plus } from "lucide-react";
 
 const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
-  const year = parseInt(startDate.slice(0, 4)); // "2026"
-  const startMonth = parseInt(startDate.slice(5, 7) - 1); // "04"
+  // const year = parseInt(startDate.slice(0, 4)); // "2026"
+  // const startMonth = parseInt(startDate.slice(5, 7) - 1); // "04"
 
-  // const year = 2026;
-  // Starting from March (Month index 2)
-  // const startMonth = 2;
-  const months = Array.from({ length: 12 }, (_, i) => (startMonth + i) % 12);
+  // // const year = 2026;
+  // // Starting from March (Month index 2)
+  // // const startMonth = 2;
+  // const months = Array.from({ length: 12 }, (_, i) => (startMonth + i) % 12);
+
+  const start = new Date(startDate + "T00:00:00");
+  const end = new Date(endDate + "T23:59:59");
+
+  const months = [];
+
+  let current = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (current <= end) {
+    months.push({
+      year: current.getFullYear(),
+      month: current.getMonth(),
+    });
+
+    current.setMonth(current.getMonth() + 1);
+  }
 
   const getDaysInMonth = (year, month) =>
     new Date(year, month + 1, 0).getDate();
@@ -21,7 +37,7 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
     W: "bg-gray-200 text-gray-700 border-gray-300", // Weekends
     H: "bg-blue-100 text-blue-700 border-blue-200", // Holiday
     WD: "bg-transparent text-gray-600 border-gray-50", //workingdays
-  //  OOR: "bg-gray-100 text-gray-300 border-gray-200", // Out of Range
+    //  OOR: "bg-gray-100 text-gray-300 border-gray-200", // Out of Range
   };
 
   return (
@@ -33,12 +49,12 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
             ATTENDANCE DASHBOARD
           </h1>
           <p className="text-gray-500 font-medium">
-            Fiscal Year {year} - {year + 1}
+            Fiscal Year {start.getFullYear()} - {end.getFullYear()}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm font-bold text-gray-700">
-            {year}
+            {start.getFullYear()}
           </div>
           <button className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-md">
             <Plus size={20} />
@@ -48,8 +64,12 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
 
       {/* Responsive Calendar Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-6">
-        {months.map((monthIndex) => {
-          const displayYear = monthIndex < startMonth ? year + 1 : year;
+        {months.map(({ year, month }) => {
+          {
+            /* const displayYear = monthIndex < startMonth ? year + 1 : year; */
+          }
+          const displayYear = year;
+          const monthIndex = month;
           const daysInMonth = getDaysInMonth(displayYear, monthIndex);
           const firstDay = getFirstDayOfMonth(displayYear, monthIndex);
           const monthName = new Date(displayYear, monthIndex).toLocaleString(
@@ -91,20 +111,40 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
                 {/* Actual Days */}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
-                  const dateStr = `${displayYear}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  {
+                    /* const dateStr = `${displayYear}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const status = attendanceData[dateStr];
+
+                  const date = new Date(displayYear, monthIndex, day); */
+                  }
+
+                  const dateObj = new Date(displayYear, monthIndex, day);
+
+                  // ✅ SAME FORMAT AS BACKEND (IMPORTANT FIX)
+                  const dateStr = dateObj.toLocaleDateString("en-CA");
+
+                  const status = attendanceData[dateStr];
+                  const date = dateObj;
+
+                  {
+                    /* const isOutOfRange =
+                    date < new Date(startDate) || date > new Date(endDate); */
+                  }
+
+                  const isOutOfRange = date < start || date > end;
 
                   return (
                     <div
                       key={day}
-                      className={`
-                        aspect-square flex items-center justify-center text-xs font-medium rounded-md border
-                        ${
-                          status
-                            ? statusColors[status]
-                            : "bg-transparent text-gray-300 border-transparent hover:bg-gray-100 cursor-default"
-                        }
-                      `}
+                      className={`aspect-square flex items-center justify-center text-xs font-medium rounded-md border
+    ${
+      isOutOfRange
+        ? "bg-gray-100 text-gray-300 border-transparent"
+        : status
+          ? statusColors[status]
+          : "bg-green-50 text-green-700 border-green-200"
+    }
+  `}
                     >
                       {day}
                     </div>
@@ -122,7 +162,7 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
           <div className="w-3 h-3 rounded bg-green-100 border border-green-200"></div>{" "}
           Present
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <div className="w-3 h-3 rounded bg-red-100 border border-red-200"></div>{" "}
           Absent

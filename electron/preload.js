@@ -85,10 +85,12 @@ contextBridge.exposeInMainWorld("api", {
     //Attendance Overview monthly overview
     getMonthlyOverview: (data) =>
       ipcRenderer.invoke("attendance:getMonthlyOverview", data),
+  },
 
-    //Attendance Overview yearly overview
+  attendanceOverviewDetails: {
+     //Attendance Overview yearly overview
     getStudentFullDetails: (data) =>
-      ipcRenderer.invoke("attendance:getStudentFullDetails", data),
+      ipcRenderer.invoke("attendanceoverviewDetails:getStudentFullDetails", data),
   },
 
   // ============ ATTENDANCE SETTINGS ============

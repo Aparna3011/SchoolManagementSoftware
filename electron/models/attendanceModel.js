@@ -1,5 +1,13 @@
 const { getDatabase } = require("../database/connection");
 
+function isHolidayDate(dateStr, holidays) {
+  return holidays.some((h) => {
+    const start = String(h.start_date).slice(0, 10);
+    const end = String(h.end_date).slice(0, 10);
+    return dateStr >= start && dateStr <= end;
+  });
+}
+
 const AttendanceModel = {
   // ✅ EXISTING (keep as it is)
   getStudentsByClass(classId) {
@@ -87,7 +95,9 @@ const AttendanceModel = {
   getMonthlyOverview(classId, academicYearId, month) {
     const db = getDatabase();
 
+    // =========================
     // 🔹 Students
+    // =========================
     const students = db
       .prepare(
         `
@@ -104,18 +114,39 @@ const AttendanceModel = {
       )
       .all(classId, academicYearId);
 
-    // 🔹 Attendance
-    const attendance = db
+    // =========================
+    // 🔹 Attendance (RAW)
+    // =========================
+    const attendanceRaw = db
       .prepare(
         `
-    SELECT enrollment_id, attendance_date, status
+    SELECT id, enrollment_id, attendance_date, status
     FROM Attendance
     WHERE strftime('%Y-%m', attendance_date) = ?
   `,
       )
       .all(month);
 
-    // 🔹 Holidays (RANGE BASED ✅)
+    // =========================
+    // 🔥 REMOVE DUPLICATES
+    // =========================
+    const attendanceMap = {};
+
+    attendanceRaw.forEach((a) => {
+      const key = `${a.enrollment_id}_${a.attendance_date}`;
+      if (!attendanceMap[key] || a.id > attendanceMap[key].id) {
+        attendanceMap[key] = a;
+      }
+    });
+
+    const attendanceLookup = {};
+    Object.values(attendanceMap).forEach((a) => {
+      attendanceLookup[`${a.enrollment_id}_${a.attendance_date}`] = a.status;
+    });
+
+    // =========================
+    // 🔹 Holidays
+    // =========================
     const holidays = db
       .prepare(
         `
@@ -126,68 +157,119 @@ const AttendanceModel = {
       )
       .all(academicYearId);
 
-    // 🔹 Weekly OFF days (is_working = 0 ✅)
+    // =========================
+    // 🔹 Weekly OFF
+    // =========================
     const weeklyOffs = db
       .prepare(
         `
-    SELECT day_of_week 
-    FROM Weekly_Schedule 
+    SELECT day_of_week FROM Weekly_Schedule
     WHERE is_working = 0
   `,
       )
       .all()
       .map((d) => Number(d.day_of_week));
 
-    // 🔹 Month range
+    // =========================
+    // 🔹 Academic Year
+    // =========================
+    const academic = db
+      .prepare(
+        `
+    SELECT start_date, end_date
+    FROM Academic_Years
+    WHERE id = ?
+  `,
+      )
+      .get(academicYearId);
+
     const [year, m] = month.split("-");
-    const start = new Date(year, m - 1, 1);
-    const end = new Date(year, m, 0);
 
-    let workingDays = 0;
+    const monthStart = new Date(year, m - 1, 1);
+    const monthEnd = new Date(year, m, 0);
 
-    let current = new Date(start);
+    const academicStart = new Date(academic.start_date + "T00:00:00");
+    const academicEnd = new Date(academic.end_date + "T23:59:59");
 
-    while (current <= end) {
-      const dateStr = current.toISOString().slice(0, 10);
-      const day = current.getDay();
+    const today = new Date();
 
-      // ✅ Holiday RANGE check
-      const isHoliday = holidays.some(
-        (h) => dateStr >= h.start_date && dateStr <= h.end_date,
-      );
+    // ✅ CORRECT RANGES
+    const start = new Date(Math.max(monthStart, academicStart));
+    const fullEnd = new Date(Math.min(monthEnd, academicEnd)); // full month range
+    const calcEnd = new Date(Math.min(fullEnd, today)); // till today
+
+    // =========================
+    // 🔹 TOTAL DAYS
+    // =========================
+    const totalDays = Math.floor((fullEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    // =========================
+    // 🔹 HOLIDAYS (FULL MONTH)
+    // =========================
+    let holidayCount = 0;
+    let hDate = new Date(start);
+
+    while (hDate <= fullEnd) {
+      const dateStr = hDate.toLocaleDateString("en-CA");
+      const day = hDate.getDay();
+
+     const isHoliday = isHolidayDate(dateStr, holidays);
 
       const isWeeklyOff = weeklyOffs.includes(day);
 
-      if (!isHoliday && !isWeeklyOff) {
-        workingDays++;
+      if (isHoliday && !isWeeklyOff) {
+        holidayCount++;
       }
 
-      current.setDate(current.getDate() + 1);
+      hDate.setDate(hDate.getDate() + 1);
     }
 
-    // 🔥 Final result
+    // =========================
+    // 🔥 FINAL RESULT
+    // =========================
     return students.map((s) => {
-      const studentAttendance = attendance.filter(
-        (a) => a.enrollment_id === s.enrollment_id,
-      );
+      let workingDays = 0;
+      let present = 0;
+      let absent = 0;
 
-      const present_days = studentAttendance.filter(
-        (a) => a.status === "Present",
-      ).length;
+      let current = new Date(start);
+
+      while (current <= calcEnd) {
+        const dateStr = current.toLocaleDateString("en-CA");
+        const day = current.getDay();
+
+       const isHoliday = isHolidayDate(dateStr, holidays);
+
+        const isWeeklyOff = weeklyOffs.includes(day);
+
+        if (!isHoliday && !isWeeklyOff) {
+          workingDays++;
+
+          const key = `${s.enrollment_id}_${dateStr}`;
+          const status = attendanceLookup[key];
+
+          if (status === "Present") present++;
+          else if (status === "Absent") absent++;
+        }
+
+        current.setDate(current.getDate() + 1);
+      }
 
       const percentage = workingDays
-        ? ((present_days / workingDays) * 100).toFixed(2)
+        ? Math.round((present / workingDays) * 100)
         : 0;
 
       return {
         ...s,
-        present_days,
+        total_days: totalDays,
         working_days: workingDays,
+        present_days: present,
+        absent_days: absent,
+        holidays: holidayCount,
         attendance_percentage: percentage,
       };
     });
   },
-
   //attendance overview details yearly overview
 
   getStudentYearlyDetails(enrollmentId) {
@@ -277,9 +359,7 @@ const AttendanceModel = {
       const dateStr = calDate.toLocaleDateString("en-CA");
       const day = calDate.getDay();
 
-      const isHoliday = holidays.some(
-        (h) => dateStr >= h.start_date && dateStr <= h.end_date,
-      );
+      const isHoliday = isHolidayDate(dateStr, holidays);
 
       const isWeeklyOff = weeklyOffs.includes(day);
 
@@ -306,10 +386,7 @@ const AttendanceModel = {
       const dateStr = calcDate.toLocaleDateString("en-CA"); // ✅ FIXED
       const day = calcDate.getDay();
 
-      const isHoliday = holidays.some(
-        (h) => dateStr >= h.start_date && dateStr <= h.end_date,
-      );
-
+const isHoliday = isHolidayDate(dateStr, holidays);
       const isWeeklyOff = weeklyOffs.includes(day);
 
       if (!isHoliday && !isWeeklyOff) {

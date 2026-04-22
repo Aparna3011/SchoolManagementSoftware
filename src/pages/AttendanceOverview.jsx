@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useDatabase } from "../hooks/useDatabase";
 import { Eye } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardBody } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardFooter,
+} from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Table } from "../components/ui/Table";
@@ -66,7 +72,7 @@ export default function AttendanceOverview() {
       }),
     );
 
-    console.log("OVERVIEW ISSSSS" , res);
+    console.log("OVERVIEW ISSSSS", res);
 
     if (!res) return;
 
@@ -152,16 +158,40 @@ export default function AttendanceOverview() {
     },
 
     {
-      key: "present_days",
-      label: "Present Days",
-      render: (value) => (
-        <span className="text-slate-700 font-medium">{value ?? 0}</span>
+      key: "monthly_overview",
+      label: (
+        <div className="flex justify-between">
+          <p className="text-black">TD</p>
+          <p>/</p>
+          <p className="text-purple-500">WD</p>
+          <p>/</p>
+          <p className="text-green-500">PD</p>
+          <p>/</p>
+          <p className="text-red-500">AD</p>
+          <p>/</p>
+          <p className="text-blue-500">HD</p>{" "}
+        </div>
+      ),
+      render: (_, row) => (
+        <span className="text-slate-700 flex justify-between font-medium">
+          <span>{row.total_days}</span>
+
+          <span className="text-purple-500">{row.working_days}</span>
+
+          <span className="text-green-500">{row.present_days}</span>
+
+          <span className="text-red-500">{row.absent_days}</span>
+
+          <span className="text-blue-500">{row.holidays || 0}</span>
+        </span>
       ),
     },
 
     {
       key: "attendance_percentage",
       label: "Attendance %",
+      align: "right", // 👈 if your Table supports alignment
+      headerAlign: "right",
       render: (value) => {
         const num = Number(value || 0);
 
@@ -180,6 +210,8 @@ export default function AttendanceOverview() {
     {
       key: "student_status",
       label: "Status",
+      align: "right", // 👈 if your Table supports alignment
+      headerAlign: "right",
       render: (value) => (
         <Badge variant={value === "Active" ? "success" : "warning"}>
           {value}
@@ -281,6 +313,19 @@ export default function AttendanceOverview() {
               onRowClick={(row) => viewDetails(row.enrollment_id)}
             />
           </CardBody>
+          <CardFooter>
+            <div className="flex gap-1">
+              <p className="text-black">Total Days[TD]</p>
+              <p>/</p>
+              <p className="text-purple-500">Working Days[WD]</p>
+              <p>/</p>
+              <p className="text-green-500">Present Days[PD]</p>
+              <p>/</p>
+              <p className="text-red-500">Absent Days[AD]</p>
+              <p>/</p>
+              <p className="text-blue-500">Holiday Days[HD]</p>
+            </div>
+          </CardFooter>
         </Card>
       )}
     </div>

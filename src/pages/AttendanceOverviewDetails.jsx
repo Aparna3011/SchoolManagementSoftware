@@ -30,9 +30,10 @@ export default function AttendanceDetails() {
   }, [id]);
 
   async function loadDetails() {
-    const res = await window.api.attendance.getStudentFullDetails({
-      enrollmentId: id,
-    });
+    const res =
+      await window.api.attendanceOverviewDetails.getStudentFullDetails({
+        enrollmentId: Number(id),
+      });
 
     console.log("FULL DATA:", res);
 
@@ -129,8 +130,9 @@ export default function AttendanceDetails() {
           </CardBody>
         </Card>
         {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4"> */}
-        <Card>
+        <Card className="text-center flex justify-center items-center bg-blue-50">
           <CardBody>
+            {" "}
             <p className="text-gray-500 text-sm">Attendance %</p>
             <h3 className="text-2xl font-bold text-blue-600">
               {summary.percentage}
@@ -138,7 +140,7 @@ export default function AttendanceDetails() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="text-center flex justify-center items-center bg-blue-50">
           <CardBody>
             <p className="text-gray-500 text-sm">Present</p>
             <h3 className="text-2xl font-bold text-green-600">
@@ -147,7 +149,7 @@ export default function AttendanceDetails() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="text-center flex justify-center items-center bg-blue-50">
           <CardBody>
             <p className="text-gray-500 text-sm">Absent</p>
             <h3 className="text-2xl font-bold text-red-600">
@@ -156,11 +158,11 @@ export default function AttendanceDetails() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card className="text-center flex justify-center items-center bg-blue-50">
           <CardBody>
             <p className="text-gray-500 text-sm">Working Days</p>
             <h3 className="text-2xl font-bold text-blue-500">
-               {summary.workingDays}
+              {summary.workingDays}
             </h3>
           </CardBody>
         </Card>
