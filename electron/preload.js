@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld("api", {
   // ============ CLASSES ============
   class: {
     getAll: () => ipcRenderer.invoke("class:getAll"),
+    getUnassignedNextClasses: () => ipcRenderer.invoke("class:getUnassignedNextClasses"),
     getById: (id) => ipcRenderer.invoke("class:getById", id),
     create: (data) => ipcRenderer.invoke("class:create", data),
     update: (id, data) => ipcRenderer.invoke("class:update", { id, data }),

@@ -17,6 +17,19 @@ const ClassModel = {
   },
 
   /**
+   * Get classes that are not assigned as a 'next_class_id' for any other class.
+   * @returns {Array<Object>}
+   */
+  getUnassignedNextClasses() {
+    const db = getDatabase();
+    return db.prepare(`
+      SELECT * FROM Classes_Master
+      WHERE id NOT IN (SELECT DISTINCT next_class_id FROM Classes_Master WHERE next_class_id IS NOT NULL)
+      ORDER BY class_name ASC
+    `).all();
+  },
+
+  /**
    * Get a class by ID.
    * @param {number} id
    * @returns {Object|undefined}
@@ -58,20 +71,22 @@ const ClassModel = {
    */
   update(id, data) {
     const db = getDatabase();
-    const { class_name, short_code, base_fee, is_active } = data;
+    const { class_name, short_code, base_fee, is_active, next_class_id } = data;
 
     db.prepare(`
       UPDATE Classes_Master
       SET class_name = COALESCE(?, class_name),
           short_code = COALESCE(?, short_code),
           base_fee = COALESCE(?, base_fee),
-          is_active = COALESCE(?, is_active)
+          is_active = COALESCE(?, is_active),
+          next_class_id = ?
       WHERE id = ?
     `).run(
       class_name ? class_name.trim() : null,
       short_code ? short_code.trim().toUpperCase() : null,
       base_fee,
       is_active,
+      next_class_id,
       id,
     );
 

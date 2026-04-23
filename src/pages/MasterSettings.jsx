@@ -8,6 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Table } from '../components/ui/Table';
 import { render } from '@react-pdf/renderer';
+import { toast } from 'react-toastify';
 
 /**
  * Master Settings Page
@@ -33,6 +34,7 @@ export default function MasterSettings() {
 
   // ---- Class State ----
   const [classes, setClasses] = useState([]);
+  const [unassignedClasses, setUnassignedClasses] = useState([]);
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [classForm, setClassForm] = useState({ class_name: '', short_code: '', base_fee: '' });
@@ -40,6 +42,7 @@ export default function MasterSettings() {
   useEffect(() => {
     loadYears();
     loadClasses();
+    loadUnassignedClasses();
   }, []);
 
   // ============ FINANCIAL YEARS ============
@@ -71,6 +74,10 @@ export default function MasterSettings() {
   }
 
   async function handleYearSave() {
+
+    console.log('the yearrr is ' ,yearForm)
+
+    toast.info('hello')
     if (!yearForm.year_label.trim() || !yearForm.start_date || !yearForm.end_date) return;
 
     const payload = {
@@ -78,9 +85,12 @@ export default function MasterSettings() {
       start_year: Number.parseInt(yearForm.start_date.slice(0, 4), 10),
     };
 
+    toast.info('here?')
     if (editingYear) {
+      toast.info('editing?')
       await execute(() => window.api.financialYear.update(editingYear.id, payload));
     } else {
+      toast.info('creating?')
       await execute(() => window.api.financialYear.create(payload));
     }
 
@@ -108,6 +118,11 @@ export default function MasterSettings() {
     const data = await execute(() => window.api.class.getAll());
     console.log('classes' , data)
     if (data) setClasses(data);
+  }
+
+  async function loadUnassignedClasses() {
+    const data = await execute(() => window.api.class.getUnassignedNextClasses());
+    if (data) setUnassignedClasses(data);
   }
 
   function openClassModal(cls = null) {
@@ -144,10 +159,26 @@ export default function MasterSettings() {
     loadClasses();
   }
 
-  async function handleDeleteClass(id) {
-    await execute(() => window.api.class.delete(id));
-    loadClasses();
+  async function handleNextClassChange(classId, nextClassId) {
+    const value = nextClassId === "" ? null : Number(nextClassId);
+
+    // Optimistic update
+    setClasses(prev => prev.map(c =>
+      c.id === classId ? { ...c, next_class_id: value } : c
+    ));
+
+    try {
+      const results = await execute(() => window.api.class.update(classId, { next_class_id: value }));
+      console.log('classes result' ,results)
+      toast.success("Next Class set sucessfully for " + results.class_name)
+      loadUnassignedClasses();
+
+    } catch (error) {
+      console.error("Failed to auto-save next class:", error);
+      loadClasses();
+    }
   }
+
 
   // ---- Column defs ----
 
@@ -193,22 +224,33 @@ export default function MasterSettings() {
   const classColumns = [
     { key: 'class_name', label: 'Class Name' },
     { key: 'short_code', label: 'Code' },
-    { key: 'next_class_id', label: 'Next Class' ,
-       render: (v) =>
+    {
+      key: 'next_class_id',
+      label: 'Next Class',
+      render: (v, row) => (
         <select
-            value={v || ""}
-            onChange={(e) => setNextClassId(Number(e.target.value))}
-          >
-            <option value="">Alumini</option>
-
-            {classes
-              //.filter((c) => c.id !== id) // avoid self
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.class_name}
-                </option>
-              ))}
-          </select>
+          value={v || ""}
+          onChange={(e) => handleNextClassChange(row.id, e.target.value)}
+          className="bg-transparent border-none focus:ring-0 cursor-pointer text-sm"
+        >
+          <option value="">Alumni</option>
+          {classes
+            .filter((c) => c.id === row.next_class_id)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.class_name}
+              </option>
+            ))}
+          {unassignedClasses
+            .filter((c) => c.id !== row.id)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.class_name}
+              </option>
+            ))}
+          
+        </select>
+      )
     },
     {
       key: 'base_fee',

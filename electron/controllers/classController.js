@@ -19,6 +19,16 @@ function registerClassHandlers() {
     }
   });
 
+  ipcMain.handle('class:getUnassignedNextClasses', async () => {
+    try {
+      const classes = ClassModel.getUnassignedNextClasses();
+      return { success: true, data: classes };
+    } catch (error) {
+      console.error('[ClassController] getUnassignedNextClasses error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('class:getById', async (_event, id) => {
     try {
       const classItem = ClassModel.getById(id);
