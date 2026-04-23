@@ -33,37 +33,30 @@ const AttendanceModel = {
   },
 
   // 🔥 ADD THIS NEW FUNCTION
-  getAttendanceWithStudents(date, classId, academicYearId) {
-    const db = getDatabase();
+ getAttendanceWithStudents(date, classId, academicYearId) {
+  const db = getDatabase();
 
-    return db
-      .prepare(
-        `
-      SELECT 
-        se.id AS enrollment_id,
-        se.roll_number,
-        sm.usin,
-        sm.student_name,
-        a.status AS attendance_status,
-        a.attendance_date AS attendance_date,
-        sm.status AS student_status,
-        a.status AS attendance_status
-      FROM Student_Enrollments se
-      JOIN Students_Master sm ON sm.id = se.student_id
-      JOIN Academic_Years ay ON ay.id = se.academic_year_id
-
-      left Outer JOIN Attendance a 
-        ON a.enrollment_id = se.id
-        AND a.attendance_date = ?
-
-      WHERE se.class_id = ?
-      AND se.academic_year_id = ?
-
-      ORDER BY se.roll_number
-    `,
-      )
-      .all(date, classId, academicYearId);
-  },
+  return db.prepare(`
+    SELECT 
+      se.id AS enrollment_id,
+      se.roll_number,
+      sm.usin,
+      sm.student_name,
+      COALESCE(a.status, 'Absent') AS attendance_status,
+      a.attendance_date,
+      sm.status AS student_status
+    FROM Student_Enrollments se
+    JOIN Students_Master sm ON sm.id = se.student_id
+    JOIN Academic_Years ay ON ay.id = se.academic_year_id
+    LEFT JOIN Attendance a 
+      ON a.enrollment_id = se.id
+      AND a.attendance_date = ?
+    WHERE se.class_id = ?
+     AND sm.status = 'Active'
+    AND se.academic_year_id = ?
+    ORDER BY se.roll_number
+  `).all(date, classId, academicYearId);
+},
 
   // ✅ EXISTING (keep as it is)
   saveBulk(records) {

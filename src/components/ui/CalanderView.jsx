@@ -13,6 +13,12 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
   const start = new Date(startDate + "T00:00:00");
   const end = new Date(endDate + "T23:59:59");
 
+  const formatDateDMY = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
   const months = [];
 
   let current = new Date(start.getFullYear(), start.getMonth(), 1);
@@ -49,7 +55,7 @@ const AttendanceCalendar = ({ startDate, endDate, attendanceData }) => {
             ATTENDANCE DASHBOARD
           </h1>
           <p className="text-gray-500 font-medium">
-            Academic Year {startDate} to {endDate}
+            Academic Year {formatDateDMY(startDate)} to {formatDateDMY(endDate)}
           </p>
         </div>
         {/* <div className="flex items-center gap-3">

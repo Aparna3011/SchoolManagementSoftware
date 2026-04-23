@@ -7,6 +7,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { Table } from '../components/ui/Table';
+import { render } from '@react-pdf/renderer';
 
 /**
  * Master Settings Page
@@ -105,6 +106,7 @@ export default function MasterSettings() {
 
   async function loadClasses() {
     const data = await execute(() => window.api.class.getAll());
+    console.log('classes' , data)
     if (data) setClasses(data);
   }
 
@@ -191,6 +193,23 @@ export default function MasterSettings() {
   const classColumns = [
     { key: 'class_name', label: 'Class Name' },
     { key: 'short_code', label: 'Code' },
+    { key: 'next_class_id', label: 'Next Class' ,
+       render: (v) =>
+        <select
+            value={v || ""}
+            onChange={(e) => setNextClassId(Number(e.target.value))}
+          >
+            <option value="">Alumini</option>
+
+            {classes
+              //.filter((c) => c.id !== id) // avoid self
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.class_name}
+                </option>
+              ))}
+          </select>
+    },
     {
       key: 'base_fee',
       label: 'Base Fee',

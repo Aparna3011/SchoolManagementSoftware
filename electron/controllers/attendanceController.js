@@ -48,8 +48,6 @@ function registerAttendanceHandlers() {
       return { success: false, error: err.message };
     }
   });
-
-  
 }
 
 module.exports = { registerAttendanceHandlers };
