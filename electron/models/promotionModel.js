@@ -82,42 +82,61 @@ const PromotionModel = {
     const db = getDatabase();
 
     const insertEnrollment = db.prepare(`
-    INSERT INTO Student_Enrollments (
-      student_id,
-      academic_year_id,
-      class_id,
-      agreed_annual_fee,
-      status
-    ) VALUES (?, ?, ?, ?, 'active')
-  `);
+  INSERT INTO Student_Enrollments (
+    student_id,
+    academic_year_id,
+    class_id,
+    agreed_annual_fee,
+    status
+  ) VALUES (?, ?, ?, ?, ?)
+`);
 
-    const deactivate = db.prepare(`
-    UPDATE Student_Enrollments
-    SET status = 'inactive'
-    WHERE student_id = ? AND status = 'active'
-  `);
+    const updateOld = db.prepare(`
+  UPDATE Student_Enrollments
+  SET status = ?
+WHERE student_id = ? AND academic_year_id = ?
+`);
 
     const transaction = db.transaction(() => {
       let count = 0;
-
       for (const p of promotions) {
-        const finalClassId =
-          p.status === "Promoted" ? targetClassId : p.currentClassId;
-
-        if (!finalClassId) {
-          throw new Error(`Invalid classId for student ${p.student_id}`);
+        // 🔥 NO NEXT CLASS → INACTIVE
+        if (!targetClassId) {
+          updateOld.run("inactive", p.student_id, p.currentYearId);
+          continue;
         }
 
-        deactivate.run(p.student_id); // ✅ close old record
+        // ✅ PROMOTED
+        if (p.status === "Promoted") {
+          updateOld.run("promoted", p.student_id, p.currentYearId);
 
-        insertEnrollment.run(
-          p.student_id,
-          targetYearId,
-          finalClassId,
-          p.fee || 0,
-        );
+          insertEnrollment.run(
+            p.student_id,
+            targetYearId,
+            targetClassId,
+            p.fee || 0,
+            "active",
+          );
 
-        count++;
+          count++;
+          continue;
+        }
+
+        // ✅ REPEAT
+        if (p.status === "Repeat") {
+          updateOld.run("repeat", p.student_id, p.currentYearId);
+
+          insertEnrollment.run(
+            p.student_id,
+            targetYearId,
+            p.currentClassId,
+            p.fee || 0,
+            "active",
+          );
+
+          count++;
+          continue;
+        }
       }
 
       return count;

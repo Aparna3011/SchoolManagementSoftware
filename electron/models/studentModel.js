@@ -419,6 +419,7 @@ const StudentModel = {
         se.section_id,
         se.roll_number,
         se.agreed_annual_fee,
+        se.status,
         ay.year_label,
         cm.class_name,
         cm.short_code

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save } from "lucide-react";
+import { Save, CircleX } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import { toast } from "react-toastify";
 import {
@@ -406,8 +406,7 @@ export default function Attendance() {
         </CardBody>
       </Card>
 
-      {/* STUDENT VIEW */}
-      {view === "students" && selectedClass && selectedYear && (
+      {view === "students" && selectedClass && selectedYear ? (
         <Card>
           <CardHeader>
             <CardTitle>Attendance Records</CardTitle>
@@ -433,6 +432,19 @@ export default function Attendance() {
               Save Attendance
             </Button>
           </CardFooter>
+        </Card>
+      ) : (
+        <Card>
+          <CardBody className="flex justify-center items-center">
+            <div className="text-center">
+              <CircleX size={80} className="mx-auto mb-2 " />
+              <h1 className="text-slate-600">
+                No Students Found for Academic Year:{" "}
+                {selectedYear?.year_label || "—"} and Class:{" "}
+                {classes.find((c) => c.id === selectedClass)?.class_name || "—"}
+              </h1>
+            </div>
+          </CardBody>
         </Card>
       )}
     </div>

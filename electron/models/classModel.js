@@ -1,8 +1,8 @@
-const { getDatabase } = require('../database/connection');
+const { getDatabase } = require("../database/connection");
 
 /**
  * Class Model
- * 
+ *
  * Data access layer for the Classes_Master table.
  */
 
@@ -12,11 +12,35 @@ const ClassModel = {
    * @param {number} id
    * @returns {Object|undefined} The target class.
    */
-  getNextClass(id) {
+  getNextClass(classId) {
     const db = getDatabase();
-    const currentClass = db.prepare('SELECT next_class_id FROM Classes_Master WHERE id = ?').get(id);
-    if (!currentClass || !currentClass.next_class_id) return undefined;
-    return this.getById(currentClass.next_class_id);
+
+    // Get next class mapping
+    const row = db
+      .prepare(
+        `
+    SELECT next_class_id
+    FROM Classes_Master
+    WHERE id = ?
+  `,
+      )
+      .get(classId);
+
+    if (!row) return null;
+
+    // ✅ If NO next class → Alumni
+    if (!row.next_class_id) {
+      return { id: "ALUMNI", class_name: "Alumni" };
+    }
+
+    // ✅ Otherwise return next class
+    return db
+      .prepare(
+        `
+    SELECT * FROM Classes_Master WHERE id = ?
+  `,
+      )
+      .get(row.next_class_id);
   },
 
   /**
@@ -25,7 +49,9 @@ const ClassModel = {
    */
   getAll() {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM Classes_Master ORDER BY class_name ASC').all();
+    return db
+      .prepare("SELECT * FROM Classes_Master ORDER BY class_name ASC")
+      .all();
   },
 
   /**
@@ -34,11 +60,15 @@ const ClassModel = {
    */
   getUnassignedNextClasses() {
     const db = getDatabase();
-    return db.prepare(`
+    return db
+      .prepare(
+        `
       SELECT * FROM Classes_Master
       WHERE id NOT IN (SELECT DISTINCT next_class_id FROM Classes_Master WHERE next_class_id IS NOT NULL)
       ORDER BY class_name ASC
-    `).all();
+    `,
+      )
+      .all();
   },
 
   /**
@@ -48,7 +78,7 @@ const ClassModel = {
    */
   getById(id) {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM Classes_Master WHERE id = ?').get(id);
+    return db.prepare("SELECT * FROM Classes_Master WHERE id = ?").get(id);
   },
 
   /**
@@ -61,16 +91,20 @@ const ClassModel = {
     const { class_name, short_code, base_fee } = data;
 
     if (!class_name?.trim()) {
-      throw new Error('Class name is required.');
+      throw new Error("Class name is required.");
     }
     if (!short_code?.trim()) {
-      throw new Error('Class short code is required.');
+      throw new Error("Class short code is required.");
     }
 
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       INSERT INTO Classes_Master (class_name, short_code, base_fee)
       VALUES (?, ?, ?)
-    `).run(class_name.trim(), short_code.trim().toUpperCase(), base_fee || 0);
+    `,
+      )
+      .run(class_name.trim(), short_code.trim().toUpperCase(), base_fee || 0);
 
     return this.getById(result.lastInsertRowid);
   },
@@ -85,7 +119,8 @@ const ClassModel = {
     const db = getDatabase();
     const { class_name, short_code, base_fee, is_active, next_class_id } = data;
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE Classes_Master
       SET class_name = COALESCE(?, class_name),
           short_code = COALESCE(?, short_code),
@@ -93,7 +128,8 @@ const ClassModel = {
           is_active = COALESCE(?, is_active),
           next_class_id = ?
       WHERE id = ?
-    `).run(
+    `,
+    ).run(
       class_name ? class_name.trim() : null,
       short_code ? short_code.trim().toUpperCase() : null,
       base_fee,
@@ -113,15 +149,20 @@ const ClassModel = {
   delete(id) {
     const db = getDatabase();
 
-    const enrollmentCount = db.prepare(
-      'SELECT COUNT(*) as count FROM Student_Enrollments WHERE class_id = ?'
-    ).get(id);
+    const enrollmentCount = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM Student_Enrollments WHERE class_id = ?",
+      )
+      .get(id);
 
     if (enrollmentCount.count > 0) {
-      return { success: false, message: 'Cannot delete: students are enrolled in this class.' };
+      return {
+        success: false,
+        message: "Cannot delete: students are enrolled in this class.",
+      };
     }
 
-    db.prepare('DELETE FROM Classes_Master WHERE id = ?').run(id);
+    db.prepare("DELETE FROM Classes_Master WHERE id = ?").run(id);
     return { success: true };
   },
 };

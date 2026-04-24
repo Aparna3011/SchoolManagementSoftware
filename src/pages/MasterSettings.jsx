@@ -77,7 +77,7 @@ export default function MasterSettings() {
 
     console.log('the yearrr is ' ,yearForm)
 
-    toast.info('hello')
+    // toast.info('hello')
     if (!yearForm.year_label.trim() || !yearForm.start_date || !yearForm.end_date) return;
 
     const payload = {
@@ -85,12 +85,12 @@ export default function MasterSettings() {
       start_year: Number.parseInt(yearForm.start_date.slice(0, 4), 10),
     };
 
-    toast.info('here?')
+    // toast.info('here?')
     if (editingYear) {
       toast.info('editing?')
       await execute(() => window.api.financialYear.update(editingYear.id, payload));
     } else {
-      toast.info('creating?')
+      // toast.info('creating?')
       await execute(() => window.api.financialYear.create(payload));
     }
 

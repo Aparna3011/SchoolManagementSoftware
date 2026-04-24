@@ -75,12 +75,12 @@ export default function Dashboard() {
       icon: GraduationCap,
       color: 'success',
     },
-    {
-      label: "Today's Collection",
-      value: `₹${stats.todayCollection.toLocaleString('en-IN')}`,
-      icon: IndianRupee,
-      color: 'warning',
-    },
+    // {
+    //   label: "Today's Collection",
+    //   value: `₹${stats.todayCollection.toLocaleString('en-IN')}`,
+    //   icon: IndianRupee,
+    //   color: 'warning',
+    // },
     {
       label: 'Pending Fees',
       value: `₹${stats.pendingFees.toLocaleString('en-IN')}`,
@@ -131,7 +131,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-3 gap-6 mb-6">
         {statCards.map((stat) => (
           <div key={stat.label} className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 group">
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${stat.color === 'primary' ? 'bg-indigo-50 text-indigo-600' : stat.color === 'success' ? 'bg-emerald-50 text-emerald-600' : stat.color === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>

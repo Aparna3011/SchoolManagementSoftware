@@ -551,6 +551,11 @@ export default function StudentDetail() {
       label: 'Agreed Annual Fee',
       render: (value) => toCurrency(value),
     },
+    {
+      key:'status',
+      label:'status',
+      render: (value) =>  <Badge variant={value ==='promoted' || value === 'active' ? 'success' : 'warning'}>{value}</Badge>,
+    },
   ];
 
   const feesColumns = [
