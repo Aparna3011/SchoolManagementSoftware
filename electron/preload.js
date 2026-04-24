@@ -72,8 +72,8 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("payment:getByEnrollment", enrollmentId),
     create: (data) => ipcRenderer.invoke("payment:create", data),
     cancel: (id) => ipcRenderer.invoke("payment:cancel", id),
-    getLedger: (enrollmentId) =>
-      ipcRenderer.invoke("payment:getLedger", enrollmentId),
+    getLedger: (studentId) =>
+      ipcRenderer.invoke("payment:getLedger", studentId),
     getStats: () => ipcRenderer.invoke("payment:getStats"),
     generateReceiptNo: () => ipcRenderer.invoke("payment:generateReceiptNo"),
   },
@@ -95,6 +95,13 @@ contextBridge.exposeInMainWorld("api", {
         "attendanceoverviewDetails:getStudentFullDetails",
         data,
       ),
+  },
+
+  // ============ PROMOTION ============
+  promotion: {
+    getStudentsForPromotion: (filters) => ipcRenderer.invoke("promotion:getStudentsForPromotion", filters),
+    getTargets: (params) => ipcRenderer.invoke("promotion:getTargets", params),
+    promoteBatch: (payload) => ipcRenderer.invoke("promotion:promoteBatch", payload),
   },
 
   // ============ ATTENDANCE SETTINGS ============

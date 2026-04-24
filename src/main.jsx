@@ -15,7 +15,7 @@ root.render(
     <ToastContainer 
     position='top-left'
     autoClose={2000}
-    pauseOnHover={false}
+    // pauseOnHover={false}
     />
     <App />
   </StrictMode>

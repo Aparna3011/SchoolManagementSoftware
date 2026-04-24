@@ -40,9 +40,9 @@ function registerPaymentHandlers() {
     }
   });
 
-  ipcMain.handle('payment:getLedger', async (_event, enrollmentId) => {
+  ipcMain.handle('payment:getLedger', async (_event, studentId) => {
     try {
-      const ledger = PaymentModel.getLedger(enrollmentId);
+      const ledger = PaymentModel.getLedger(studentId);
       return { success: true, data: ledger };
     } catch (error) {
       console.error('[PaymentController] getLedger error:', error);

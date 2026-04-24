@@ -224,8 +224,9 @@ const StudentModel = {
         class_id,
         section_id,
         roll_number,
-        agreed_annual_fee
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        agreed_annual_fee,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?,'active')
     `);
 
     const run = db.transaction(() => {

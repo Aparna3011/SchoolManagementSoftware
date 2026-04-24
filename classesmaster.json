@@ -1,0 +1,51 @@
+{
+"SELECT * FROM Classes_Master cm": [
+	{
+		"id" : 1,
+		"class_name" : "PG",
+		"short_code" : "PG",
+		"base_fee" : 10000.0,
+		"is_active" : 1,
+		"next_class_id" : 2
+	},
+	{
+		"id" : 2,
+		"class_name" : "First Standard",
+		"short_code" : "1ST",
+		"base_fee" : 20000.0,
+		"is_active" : 1,
+		"next_class_id" : 4
+	},
+	{
+		"id" : 4,
+		"class_name" : "Second",
+		"short_code" : "2ND",
+		"base_fee" : 10.0,
+		"is_active" : 1,
+		"next_class_id" : 5
+	},
+	{
+		"id" : 5,
+		"class_name" : "Third",
+		"short_code" : "3RD",
+		"base_fee" : 10.0,
+		"is_active" : 1,
+		"next_class_id" : 6
+	},
+	{
+		"id" : 6,
+		"class_name" : "Fourth",
+		"short_code" : "4TH",
+		"base_fee" : 50.0,
+		"is_active" : 1,
+		"next_class_id" : 7
+	},
+	{
+		"id" : 7,
+		"class_name" : "Fifth std",
+		"short_code" : "5TH",
+		"base_fee" : 20000.0,
+		"is_active" : 1,
+		"next_class_id" : null
+	}
+]}

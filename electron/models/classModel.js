@@ -8,6 +8,18 @@ const { getDatabase } = require('../database/connection');
 
 const ClassModel = {
   /**
+   * Get the next class for a given class ID.
+   * @param {number} id
+   * @returns {Object|undefined} The target class.
+   */
+  getNextClass(id) {
+    const db = getDatabase();
+    const currentClass = db.prepare('SELECT next_class_id FROM Classes_Master WHERE id = ?').get(id);
+    if (!currentClass || !currentClass.next_class_id) return undefined;
+    return this.getById(currentClass.next_class_id);
+  },
+
+  /**
    * Get all classes.
    * @returns {Array<Object>}
    */

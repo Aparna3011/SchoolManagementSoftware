@@ -7,6 +7,7 @@ import {
   Settings,
   Building2,
   CalendarCheck,
+  Award 
 } from 'lucide-react';
 
 /**
@@ -24,6 +25,8 @@ const navItems = [
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
   { to: '/attendance-overview', label: 'Attendance Overview', icon: CalendarCheck },
   { to: '/attendance-settings', label: 'Attendance Settings', icon: CalendarCheck },
+  { to: '/Promotion', label: 'Promotion', icon: Award},
+  
   { to: '/company-profile', label: 'Company Profile', icon: Building2 },
 ];
 

@@ -100,13 +100,15 @@ export default function Fees() {
   }
   async function selectStudent(student) {
     setSelectedStudent(student);
+
+    console.log('student information', student)
     clearPreview();
-    await loadLedger(student.enrollment_id);
+    await loadLedger(student.id);
   }
 
-  async function loadLedger(enrollmentId) {
-    if (!enrollmentId) return;
-    const data = await execute(() => window.api.payment.getLedger(enrollmentId));
+  async function loadLedger(studentId) {
+    if (!studentId) return;
+    const data = await execute(() => window.api.payment.getLedger(studentId));
     console.log('Ledger data loaded:', data);
     if (data) setLedger(data);
   }
