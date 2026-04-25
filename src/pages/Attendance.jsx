@@ -13,6 +13,7 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 import { Table } from "../components/ui/Table";
+import {TabIndexHandler} from "../components/ui/TabIndexHandler";
 
 export default function Attendance() {
   const { execute, loading } = useDatabase();
@@ -418,12 +419,13 @@ export default function Attendance() {
                 Mark All Present
               </Button>
             </div>
-
+            <TabIndexHandler>
             <Table
               columns={columns}
               data={students}
               emptyMessage="No students found for the selected class"
             />
+            </TabIndexHandler>
           </CardBody>
 
           <CardFooter>

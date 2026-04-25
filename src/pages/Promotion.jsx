@@ -13,6 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 import { Table } from "../components/ui/Table";
 import { Input } from "../components/ui/Input";
+import {TabIndexHandler} from "../components/ui/TabIndexHandler";
 
 export default function Promotion() {
   const { execute, loading } = useDatabase();
@@ -376,11 +377,13 @@ export default function Promotion() {
                 Mark All Promoted
               </Button>
             </div>
+            <TabIndexHandler>
             <Table
               columns={columns}
               data={students}
               emptyMessage="No students found for the selected criteria"
             />
+            </TabIndexHandler>
           </CardBody>
           <CardFooter>
             <div className="flex items-center gap-3">

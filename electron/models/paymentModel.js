@@ -24,7 +24,7 @@ const PaymentModel = {
     return db
       .prepare(
         `
-      SELECT *
+      SELECT pay.*
         FROM Payments pay
       INNER JOIN Student_Enrollments se on pay.enrollment_id = se.id
       WHERE  se.student_id = ?
@@ -85,8 +85,8 @@ const PaymentModel = {
     const result = db
       .prepare(
         `
-    INSERT INTO Payments (enrollment_id, receipt_no, amount_paid, payment_mode, amount_in_words)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO Payments (enrollment_id, receipt_no, amount_paid, payment_mode, amount_in_words, status)
+    VALUES (?, ?, ?, ?, ?, ?)
   `,
       )
       .run(
@@ -95,6 +95,7 @@ const PaymentModel = {
         amountNumber,
         payment_mode || "Cash",
         amount_in_words,
+        "Active",
       );
 
     return this.getById(result.lastInsertRowid);
@@ -113,18 +114,32 @@ const PaymentModel = {
     const enrollment = db
       .prepare(
         `
-      SELECT
-        se.*,
-        sm.usin,
-        sm.surname,
-        sm.student_name,
-        cm.class_name,
-        ay.year_label
-      FROM Student_Enrollments se
-      JOIN Students_Master sm ON se.student_id = sm.id
-      JOIN Classes_Master cm ON se.class_id = cm.id
-      JOIN Academic_Years ay ON se.academic_year_id = ay.id
-      WHERE se.student_id = ?
+     SELECT
+  se.*,
+  sm.usin,
+  sm.surname,
+  sm.student_name,
+  cm.class_name,
+  ay.year_label,
+
+  COALESCE(SUM(
+    CASE 
+      WHEN pay.status = 'Active' THEN pay.amount_paid 
+      ELSE 0 
+    END
+  ), 0) AS total_paid
+
+FROM Student_Enrollments se
+
+JOIN Students_Master sm ON se.student_id = sm.id
+JOIN Classes_Master cm ON se.class_id = cm.id
+JOIN Academic_Years ay ON se.academic_year_id = ay.id
+
+LEFT JOIN Payments pay ON pay.enrollment_id = se.id
+
+WHERE se.student_id = ?
+
+GROUP BY se.id
     `,
       )
       .all(studentId);
